@@ -74,7 +74,7 @@ const QuoteCreationPage = () => {
   const { data: editingDoc } = useQuery({
     queryKey: ['dokument', id],
     queryFn: async () => {
-      const res = await apiClient.get(/dokumente/);
+      const res = await apiClient.get(`/dokumente/${id}`);
       return res.data;
     },
     enabled: !!id,
@@ -84,7 +84,7 @@ const QuoteCreationPage = () => {
   const { data: preKunde } = useQuery({
     queryKey: ['kunde', preselectedKunde],
     queryFn: async () => {
-      const res = await apiClient.get(/kunden/);
+      const res = await apiClient.get(`/kunden/${preselectedKunde}`);
       return res.data;
     },
     enabled: !!preselectedKunde && !id,
@@ -100,14 +100,14 @@ const QuoteCreationPage = () => {
       if (editingDoc.kunde_id) {
         // We just need enough for the combobox to show it, or fetch full
         // It's better to fetch full customer, but the API might have returned enough
-        apiClient.get(/kunden/).then(res => {
+        apiClient.get(`/kunden/${editingDoc.kunde_id}`).then(res => {
           setSelectedKunde(res.data);
         });
       }
 
       if (editingDoc.positionen) {
-        setPositionen(editingDoc.positionen.map((p: any) => ({
-          id: pos--,
+        setPositionen(editingDoc.positionen.map((p: any, idx: number) => ({
+          id: `pos-${idx}-${Date.now()}`,
           position_nr: p.position_nr,
           artikel_id: p.artikel_id,
           bezeichnung: p.bezeichnung,
@@ -236,7 +236,7 @@ const QuoteCreationPage = () => {
         })),
       };
       const res = id 
-        ? await apiClient.put(/dokumente/, payload)
+        ? await apiClient.put(`/dokumente/${id}`, payload)
         : await apiClient.post('/dokumente/', payload);
       return res.data;
     },
@@ -304,6 +304,8 @@ const QuoteCreationPage = () => {
         warengruppe_id: p.warengruppe_id,
         warengruppe_name: p.warengruppe_name,
       })),
+    };
+
   const handleNavigateBack = () => {
     if (isDirty) {
       setShowDiscardModal(true);
