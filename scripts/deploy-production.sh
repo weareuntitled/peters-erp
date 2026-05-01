@@ -8,8 +8,8 @@ if [ -z "$TAG" ]; then
     exit 1
 fi
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-VPS_DIR="$(dirname "$SCRIPT_DIR")"
+VPS_DIR="/opt/peters-erp"
+REPO_DIR="$VPS_DIR/repo"
 
 echo "=========================================="
 echo "  Deploying Production - Peters ERP"
@@ -17,32 +17,42 @@ echo "  Tag: $TAG"
 echo "  Time: $(date)"
 echo "=========================================="
 
+# Pull latest repo changes
+cd "$REPO_DIR"
+git pull origin main
+
 # Store current tag for rollback
-cd "$VPS_DIR"
-CURRENT_TAG=$(cat .current_tag 2>/dev/null || echo "unknown")
+CURRENT_TAG=$(cat "$VPS_DIR/.current_tag" 2>/dev/null || echo "unknown")
 echo "Previous tag: $CURRENT_TAG"
-echo "$TAG" > .current_tag
-echo "$CURRENT_TAG" > .previous_tag
+echo "$TAG" > "$VPS_DIR/.current_tag"
+echo "$CURRENT_TAG" > "$VPS_DIR/.previous_tag"
 
-# Change to production directory
-cd "$VPS_DIR/production"
-
-# Update docker-compose to use specific tag
-sed -i "s|image: ghcr.io/weareuntitled/peters-erp/backend:.*|image: ghcr.io/weareuntitled/peters-erp/backend:$TAG|g" docker-compose.yml || true
-sed -i "s|image: ghcr.io/weareuntitled/peters-erp/frontend:.*|image: ghcr.io/weareuntitled/peters-erp/frontend:$TAG|g" docker-compose.yml || true
+# Export images
+export BACKEND_IMAGE="ghcr.io/weareuntitled/peters-erp/backend:$TAG"
+export FRONTEND_IMAGE="ghcr.io/weareuntitled/peters-erp/frontend:$TAG"
 
 # Pull new images
 echo "Pulling images..."
-docker pull "ghcr.io/weareuntitled/peters-erp/backend:$TAG"
-docker pull "ghcr.io/weareuntitled/peters-erp/frontend:$TAG"
+docker pull "$BACKEND_IMAGE" || { echo "ERROR: Could not pull backend image"; exit 1; }
+docker pull "$FRONTEND_IMAGE" || { echo "ERROR: Could not pull frontend image"; exit 1; }
 
 # Stop old containers
 echo "Stopping old containers..."
-docker compose down
+docker compose -f "$REPO_DIR/docker-compose.production.yml" -p peters-erp-production down 2>/dev/null || true
+
+# Write tagged docker-compose override
+cat > "$REPO_DIR/docker-compose.production.override.yml" << EOF
+services:
+  backend:
+    image: $BACKEND_IMAGE
+  frontend:
+    image: $FRONTEND_IMAGE
+EOF
 
 # Start new containers
 echo "Starting new containers..."
-docker compose up -d
+cd "$REPO_DIR"
+docker compose -f docker-compose.production.yml -f docker-compose.production.override.yml -p peters-erp-production up -d
 
 # Wait for services to be ready
 echo "Waiting for services to be ready..."
@@ -62,20 +72,11 @@ done
 
 if [ "$HEALTHY" = false ]; then
     echo "ERROR: Backend health check failed after 30 attempts"
-    echo "Rolling back to previous version..."
-    
-    # Rollback
-    PREVIOUS_TAG=$(cat "$VPS_DIR/.previous_tag" 2>/dev/null || echo "")
-    if [ -n "$PREVIOUS_TAG" ]; then
-        "$SCRIPT_DIR/rollback-production.sh" "$PREVIOUS_TAG"
-    else
-        echo "No previous tag found for rollback!"
-        docker compose logs --tail 100 backend
-        exit 1
-    fi
+    docker compose -p peters-erp-production logs --tail 100 backend
+    exit 1
 fi
 
-# Cleanup old images (keep last 20 including previous)
+# Cleanup old images (keep last 20)
 echo "Cleaning up old images..."
 docker images "ghcr.io/weareuntitled/peters-erp/*" --format "{{.Repository}}:{{.Tag}} {{.CreatedAt}}" | \
     grep "production-" | \

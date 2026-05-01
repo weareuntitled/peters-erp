@@ -109,8 +109,19 @@ jobs:
           sleep 15
           curl -f https://peters-erp.com/api/health || echo "Health check warning - service may still be starting"
 
-      - name: Send Email Notification
+      - name: Check SMTP configured
+        id: smtp_check
         if: always()
+        run: |
+          if [ -n "${{ secrets.SMTP_HOST }}" ]; then
+            echo "configured=true" >> $GITHUB_OUTPUT
+          else
+            echo "configured=false" >> $GITHUB_OUTPUT
+            echo "SMTP not configured, skipping email notification"
+          fi
+
+      - name: Send Email Notification
+        if: always() && steps.smtp_check.outputs.configured == 'true'
         continue-on-error: true
         uses: dawidd6/action-send-mail@v3
         with:

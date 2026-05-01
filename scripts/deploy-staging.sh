@@ -8,8 +8,9 @@ if [ -z "$TAG" ]; then
     exit 1
 fi
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-VPS_DIR="$(dirname "$SCRIPT_DIR")"
+# Base directory on VPS
+VPS_DIR="/opt/peters-erp"
+REPO_DIR="$VPS_DIR/repo"
 
 echo "=========================================="
 echo "  Deploying Staging - Peters ERP"
@@ -17,25 +18,40 @@ echo "  Tag: $TAG"
 echo "  Time: $(date)"
 echo "=========================================="
 
-# Change to staging directory
-cd "$VPS_DIR/staging"
+# Pull latest repo changes
+cd "$REPO_DIR"
+git pull origin main
 
-# Update docker-compose to use specific tag
-sed -i "s|image: ghcr.io/weareuntitled/peters-erp/backend:.*|image: ghcr.io/weareuntitled/peters-erp/backend:$TAG|g" docker-compose.yml || true
-sed -i "s|image: ghcr.io/weareuntitled/peters-erp/frontend:.*|image: ghcr.io/weareuntitled/peters-erp/frontend:$TAG|g" docker-compose.yml || true
+# Export tag for docker compose (it reads from env)
+export BACKEND_IMAGE="ghcr.io/weareuntitled/peters-erp/backend:$TAG"
+export FRONTEND_IMAGE="ghcr.io/weareuntitled/peters-erp/frontend:$TAG"
+
+# Login to GHCR (needed for private images)
+echo "Logging into GHCR..."
+echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_USER" --password-stdin 2>/dev/null || true
 
 # Pull new images
 echo "Pulling images..."
-docker pull "ghcr.io/weareuntitled/peters-erp/backend:$TAG"
-docker pull "ghcr.io/weareuntitled/peters-erp/frontend:$TAG"
+docker pull "$BACKEND_IMAGE" || { echo "ERROR: Could not pull backend image"; exit 1; }
+docker pull "$FRONTEND_IMAGE" || { echo "ERROR: Could not pull frontend image"; exit 1; }
 
-# Stop old containers
+# Stop old containers (if running)
 echo "Stopping old containers..."
-docker compose down
+docker compose -f "$REPO_DIR/docker-compose.staging.yml" -p peters-erp-staging down 2>/dev/null || true
+
+# Write a tagged docker-compose override for staging
+cat > "$REPO_DIR/docker-compose.staging.override.yml" << EOF
+services:
+  backend:
+    image: $BACKEND_IMAGE
+  frontend:
+    image: $FRONTEND_IMAGE
+EOF
 
 # Start new containers
 echo "Starting new containers..."
-docker compose up -d
+cd "$REPO_DIR"
+docker compose -f docker-compose.staging.yml -f docker-compose.staging.override.yml -p peters-erp-staging up -d
 
 # Wait for services to be ready
 echo "Waiting for services to be ready..."
@@ -50,7 +66,7 @@ for i in {1..30}; do
     fi
     if [ $i -eq 30 ]; then
         echo "WARNING: Backend health check failed after 30 attempts"
-        docker compose logs --tail 50 backend
+        docker compose -p peters-erp-staging logs --tail 50 backend
     fi
     sleep 2
 done

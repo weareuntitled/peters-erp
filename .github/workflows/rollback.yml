@@ -62,15 +62,27 @@ jobs:
           sleep 15
           curl -f https://peters-erp.com/api/health || echo "Health check warning after rollback"
 
-      - name: Send Email Notification
+      - name: Check SMTP configured
+        id: smtp_check
         if: always()
+        run: |
+          if [ -n "${{ secrets.SMTP_HOST }}" ]; then
+            echo "configured=true" >> $GITHUB_OUTPUT
+          else
+            echo "configured=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send Email Notification
+        if: always() && steps.smtp_check.outputs.configured == 'true'
+        continue-on-error: true
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: ${{ secrets.SMTP_HOST }}
           server_port: ${{ secrets.SMTP_PORT }}
           username: ${{ secrets.SMTP_USER }}
           password: ${{ secrets.SMTP_PASSWORD }}
-          to: ${{ secrets.EMAIL_TO }}
+          to: djdanep@gmail.com
+          from: GitHub Actions <noreply@peters-erp.com>
           subject: "⚠️ Production Rolled Back - Peters ERP"
           body: |
             Production has been rolled back.
