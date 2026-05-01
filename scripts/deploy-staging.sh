@@ -18,6 +18,12 @@ echo "  Tag: $TAG"
 echo "  Time: $(date)"
 echo "=========================================="
 
+# Ensure data and static directories exist
+mkdir -p "$VPS_DIR/data/staging"
+mkdir -p "$VPS_DIR/static"
+chmod 755 "$VPS_DIR/data/staging"
+chmod 755 "$VPS_DIR/static"
+
 # Pull latest repo changes
 cd "$REPO_DIR"
 git pull origin main
@@ -47,13 +53,19 @@ EOF
 # Start new containers
 echo "Starting new containers..."
 cd "$REPO_DIR"
-docker compose -f docker-compose.staging.yml -f docker-compose.staging.override.yml -p peters-erp-staging up -d
+docker compose -f docker-compose.staging.yml -f docker-compose.staging.override.yml -p peters-erp-staging up -d backend
+echo "Backend started, checking logs..."
+sleep 5
+docker logs --tail 30 peters-erp-staging-backend || true
+
+# Now start frontend
+docker compose -f docker-compose.staging.yml -f docker-compose.staging.override.yml -p peters-erp-staging up -d frontend
 
 # Wait for services to be ready
 echo "Waiting for services to be ready..."
-sleep 5
+sleep 10
 
-# Health check
+# Health check with detailed logging
 echo "Checking backend health..."
 for i in {1..30}; do
     if curl -sf http://localhost:8001/api/health > /dev/null 2>&1; then
@@ -61,8 +73,12 @@ for i in {1..30}; do
         break
     fi
     if [ $i -eq 30 ]; then
-        echo "WARNING: Backend health check failed after 30 attempts"
-        docker compose -p peters-erp-staging logs --tail 50 backend
+        echo "ERROR: Backend health check failed after 30 attempts"
+        echo "--- Backend logs: ---"
+        docker logs --tail 100 peters-erp-staging-backend || true
+        echo "--- Container status: ---"
+        docker ps -a --filter "name=peters-erp-staging"
+        exit 1
     fi
     sleep 2
 done

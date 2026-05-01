@@ -10,7 +10,7 @@ services:
       # Mount static files (logos, uploads)
       - ../static:/app/static
     environment:
-      - DATABASE_URL=sqlite:///app/data/gswin_modern.db
+      - DATABASE_URL=sqlite:////app/data/gswin_modern.db
       - API_URL=https://staging.peters-erp.com/api
       - SECRET_KEY=${SECRET_KEY:-staging-secret-key-change-me-12345}
       - LOG_LEVEL=debug
