@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block extra_meta %}
+<tr>
+    <td class="meta-label">G&uuml;ltig bis:</td>
+    <td class="meta-value">30 Tage ab Angebotsdatum</td>
+</tr>
+{% endblock %}
+
+{% block intro %}
+<div class="intro-text">
+    {% if company.einleitung_angebot %}
+    <p>{{ company.einleitung_angebot }}</p>
+    {% else %}
+    <p>
+        Sehr geehrte Damen und Herren,<br>
+        vielen Dank f&uuml;r Ihre Anfrage. Gerne unterbreiten wir Ihnen folgendes Angebot:
+    </p>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block payment_terms %}
+<div class="payment-terms">
+    <p>
+        Dieses Angebot ist 30 Tage ab Angebotsdatum g&uuml;ltig.
+        Bei Auftragserteilung gelten unsere allgemeinen Gesch&auml;ftsbedingungen.
+    </p>
+</div>
+{% endblock %}
+
+{% block closing %}
+<div class="closing">
+    <p>Wir w&uuml;rden uns freuen, den Auftrag f&uuml;r Sie ausf&uuml;hren zu d&uuml;rfen.</p>
+    <p>Mit freundlichen Gr&uuml;&szlig;en</p>
+    <p class="signature">{{ company.geschaeftsfuehrer }}</p>
+</div>
+{% endblock %}

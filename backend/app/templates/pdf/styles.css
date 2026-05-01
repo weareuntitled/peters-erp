@@ -1,0 +1,404 @@
+/* PDF Styles — GSWIN ERP
+   Design Tokens:
+     --text-sm:   8pt  (Fußzeile, Steuerinfos, Meta-Labels)
+     --text-md:  10pt  (Body, Tabellen, Zusammenfassung)
+     --text-lg:  14pt  (Dokumententitel)
+     Weight: regular | bold
+*/
+
+/* ── Reset & Base ──────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+@page {
+    size: A4 portrait;
+    margin: 18mm 20mm 25mm 20mm;
+    @bottom-center { content: "Seite " counter(page) " von " counter(pages); font-size: 8pt; color: #555; }
+}
+
+/* ── Typography Tokens ─────────────────────────────────────── */
+body {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 9pt;    /* --text-md */
+    line-height: 1.5;
+    color: #1a1a1a;
+}
+
+/* ── Absenderzeile ─────────────────────────────────────────── */
+.empfaenger {
+    font-size: 9pt;   /* --text-md */
+    line-height: 1.65;
+    flex: 1;
+    max-width: 95mm;
+    overflow: hidden;
+}
+
+.header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2mm;
+    width: 100%;
+    gap: 5mm;
+}
+
+.logo-container {
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.logo-img {
+    max-height: 28mm;
+    width: auto;
+    max-width: 45mm;
+}
+
+.absenderzeile {
+    font-size: 6pt;
+    color: #777;
+    padding-bottom: 2mm;
+    display: block;
+    flex: 1;
+    line-height: 1.3;
+}
+
+.dokumentenkopf {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10mm;
+    margin-top: 6mm;
+    gap: 15mm;
+}
+
+.meta-side {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 55mm;
+    flex-shrink: 0;
+    flex-grow: 0;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.meta-block {
+    font-size: 9pt;
+    text-align: right;
+    width: 100%;
+    table-layout: fixed;
+}
+
+.meta-row {
+    display: table-row;
+    width: 100%;
+    line-height: 1.6;
+}
+
+.meta-label {
+    display: table-cell;
+    font-weight: normal;
+    color: #555;
+    text-align: left;
+    white-space: nowrap;
+    padding-right: 4mm;
+}
+
+.meta-value {
+    display: table-cell;
+    font-weight: bold;
+    color: #1a1a1a;
+    text-align: right;
+    white-space: nowrap;
+}
+
+/* ── Titel ────────────────────────────────────────────────── */
+.doc-title {
+    font-size: 12pt;   /* --text-lg */
+    font-weight: bold;
+    color: #0071bc;
+    margin-bottom: 6mm;
+}
+
+/* ── Einleitung / Kopftext / Fusstext ─────────────────────── */
+.intro-text, .kopftext, .fusstext {
+    font-size: 9pt;
+    margin-bottom: 5mm;
+}
+
+/* ── Tabellen ──────────────────────────────────────────────── */
+.items-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 6mm;
+    font-size: 9pt;
+}
+
+.items-table thead tr {
+    background: #f4f4f5;
+    border-top: 1pt solid #ccc;
+    border-bottom: 1pt solid #ccc;
+}
+
+.items-table th {
+    font-size: 7pt;    /* --text-sm */
+    font-weight: normal;
+    text-transform: uppercase;
+    color: #555;
+    padding: 2mm 2mm;
+    letter-spacing: 0.03em;
+}
+
+.items-table td {
+    padding: 1.8mm 2mm;
+    border-bottom: 0.5pt solid #eee;
+    vertical-align: top;
+}
+
+.col-pos   { width: 7%;  text-align: center; }
+.col-desc  { width: 48%; }
+.col-qty   { width: 8%; text-align: right; }
+.col-unit  { width: 8%; text-align: center; }
+.col-price { width: 14%; text-align: right; }
+.col-total { width: 15%; text-align: right; }
+
+.items-table th.col-qty,
+.items-table th.col-price,
+.items-table th.col-total { text-align: right; }
+
+.items-table th.col-unit { text-align: center; }
+
+.no-items { font-size: 8pt; color: #888; font-style: italic; margin: 4mm 0; }
+
+/* ── Warengruppen-Blöcke ──────────────────────────────────── */
+.warengruppe-block { margin-bottom: 5mm; }
+
+.warengruppe-titel {
+    font-size: 7pt;    /* --text-sm */
+    font-weight: bold;
+    color: #1e40af;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 1mm;
+}
+
+.warengruppe-summe {
+    font-size: 7pt;   /* --text-sm */
+    color: #555;
+    text-align: right;
+    padding: 1mm 2mm;
+    border-bottom: 0.5pt solid #ccc;
+}
+
+/* ── Summen ───────────────────────────────────────────────── */
+.summen-block {
+    width: 45%;
+    margin-left: auto;
+    margin-top: 4mm;
+    margin-bottom: 8mm;
+    font-size: 9pt;
+}
+
+.summe-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 1.5mm 0;
+    border-bottom: 0.5pt solid #eee;
+}
+
+.summe-wg { color: #555; font-size: 7pt; }
+
+.summe-total {
+    border-top: 1.5pt solid #1e40af;
+    border-bottom: none;
+    padding-top: 2mm;
+    font-size: 9pt;
+}
+
+/* ── Steuer-Hinweise ──────────────────────────────────────── */
+.steuer-hinweise {
+    font-size: 7pt;   /* --text-sm */
+    color: #555;
+    margin-bottom: 5mm;
+    border-left: 2pt solid #1e40af;
+    padding-left: 3mm;
+}
+
+.steuer-hinweise p { margin-bottom: 1mm; }
+
+/* ── Bemerkungen ───────────────────────────────────────────── */
+.bemerkungen {
+    font-size: 7pt;   /* --text-sm */
+    color: #555;
+    border: 0.5pt solid #ddd;
+    padding: 2mm 3mm;
+    margin-bottom: 5mm;
+    border-radius: 1mm;
+}
+
+/* ── Zahlungsbedingungen ─────────────────────────────────── */
+.payment-terms {
+    font-size: 7pt;
+    color: #555;
+    margin-bottom: 6mm;
+}
+
+.payment-terms p { margin-bottom: 1mm; }
+
+/* ── Schlusstext ──────────────────────────────────────────── */
+.closing { margin-bottom: 8mm; }
+.closing p { margin-bottom: 1mm; }
+.signature { margin-top: 5mm; font-weight: bold; }
+
+/* ── Fusszeile (fixiert am Seitenende) ──────────────────── */
+.fusszeile {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 2mm;
+    margin-top: 10mm;
+    border-top: 0.5pt solid #ccc;
+    font-size: 7pt;    /* --text-sm */
+    color: #666;
+    line-height: 1.7;
+}
+
+.fuss-col { flex: 1; }
+.fuss-center { text-align: center; }
+.fuss-rechts { text-align: right; }
+
+
+/* ════════════════════════════════════════════════════════════════
+   LEGACY TEMPLATE SUPPORT (DB-stored templates)
+   These rules support the old html_content template structure
+   used by vorlagen stored in the database.
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── Old Header Layout ─────────────────────────────────────── */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 4mm;
+    padding-bottom: 2mm;
+    border-bottom: 0.5pt solid #ddd;
+    font-size: 9pt;
+}
+
+.company-info { flex: 1; }
+.company-name {
+    font-size: 14pt;
+    font-weight: bold;
+    color: #0071bc;
+    margin-bottom: 1mm;
+}
+.company-address { color: #555; }
+.company-contact {
+    text-align: right;
+    font-size: 8pt;
+    color: #555;
+    line-height: 1.6;
+}
+
+/* ── Sender Line ───────────────────────────────────────────── */
+.sender-line {
+    font-size: 6pt;
+    color: #777;
+    padding-bottom: 2mm;
+    margin-bottom: 2mm;
+    border-bottom: 0.5pt solid #eee;
+}
+
+/* ── Recipient ─────────────────────────────────────────────── */
+.recipient {
+    font-size: 9pt;
+    line-height: 1.65;
+    margin-bottom: 8mm;
+    max-width: 95mm;
+}
+.recipient-name { font-weight: bold; }
+
+/* ── Document Meta (old table layout) ──────────────────────── */
+.doc-meta {
+    width: 55mm;
+    margin-left: auto;
+    margin-bottom: 6mm;
+    font-size: 9pt;
+}
+.meta-table { width: 100%; border-collapse: collapse; }
+.meta-table td { padding: 0.8mm 0; }
+.meta-table .meta-label {
+    display: table-cell;
+    font-weight: normal;
+    color: #555;
+    text-align: left;
+    white-space: nowrap;
+    padding-right: 4mm;
+}
+.meta-table .meta-value {
+    display: table-cell;
+    font-weight: bold;
+    color: #1a1a1a;
+    text-align: right;
+    white-space: nowrap;
+}
+
+/* ── Totals (old layout) ───────────────────────────────────── */
+.totals {
+    width: 45%;
+    margin-left: auto;
+    margin-top: 4mm;
+    margin-bottom: 8mm;
+    font-size: 9pt;
+}
+.totals-table { width: 100%; border-collapse: collapse; }
+.totals-table td { padding: 1.5mm 0; border-bottom: 0.5pt solid #eee; }
+.totals-label { text-align: left; }
+.totals-value { text-align: right; font-weight: bold; }
+.totals-grand {
+    border-top: 1.5pt solid #1e40af;
+    border-bottom: none;
+    padding-top: 2mm;
+    font-size: 9pt;
+}
+
+/* ── Footer (old layout) ───────────────────────────────────── */
+.footer {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 2mm;
+    margin-top: 10mm;
+    border-top: 0.5pt solid #ccc;
+    font-size: 7pt;
+    color: #666;
+    line-height: 1.7;
+}
+.footer-col { flex: 1; }
+.footer-col:nth-child(2) { text-align: center; }
+.footer-col:nth-child(3) { text-align: right; }
+
+/* ── Warengruppe (old layout) ──────────────────────────────── */
+.warengruppe-section { margin-bottom: 5mm; }
+.warengruppe-header {
+    font-size: 7pt;
+    font-weight: bold;
+    color: #1e40af;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 1mm;
+}
+.warengruppe-subtotal {
+    font-size: 7pt;
+    color: #555;
+    text-align: right;
+    padding: 1mm 2mm;
+    border-bottom: 0.5pt solid #ccc;
+}
+
+/* ── Remarks (old layout) ──────────────────────────────────── */
+.remarks {
+    font-size: 7pt;
+    color: #555;
+    border: 0.5pt solid #ddd;
+    padding: 2mm 3mm;
+    margin-bottom: 5mm;
+    border-radius: 1mm;
+}

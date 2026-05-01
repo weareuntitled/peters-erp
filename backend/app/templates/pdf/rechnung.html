@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block extra_meta %}
+<div class="meta-row">
+    <span class="meta-label">Zahlungsziel:</span>
+    <span class="meta-value">
+        {% if company.zahlungsziel %}
+            {% if company.zahlungsziel|string|length < 3 %}
+                {{ company.zahlungsziel }} Tage netto
+            {% else %}
+                {{ company.zahlungsziel }}
+            {% endif %}
+        {% else %}
+            14 Tage netto
+        {% endif %}
+    </span>
+</div>
+{% endblock %}
+
+{% block intro %}
+<p class="intro-text">
+    Sehr geehrte Damen und Herren,<br>
+    f&uuml;r die erbrachten Leistungen erlauben wir uns, Ihnen folgenden Betrag in Rechnung zu stellen:
+</p>
+{% endblock %}
+
+{% block payment_terms %}
+<div class="payment-terms">
+    <p>
+        Bitte &uuml;berweisen Sie den Gesamtbetrag von <strong>{{ totals.total_formatted }}</strong>
+        innerhalb von {{ company.zahlungsziel }} Tagen auf unser unten angegebenes Konto.
+    </p>
+    <p class="payment-details">
+        Bankverbindung: {{ company.bank }}<br>
+        IBAN: {{ company.iban }}<br>
+        BIC: {{ company.bic }}<br>
+        Verwendungszweck: {{ meta.number }}
+    </p>
+</div>
+{% endblock %}
+
+{% block closing %}
+<div class="closing">
+    {% if company.schlusstext_rechnung %}
+    <p>{{ company.schlusstext_rechnung }}</p>
+    {% else %}
+    <p>Vielen Dank f&uuml;r Ihren Auftrag!</p>
+    {% endif %}
+    <p>Mit freundlichen Gr&uuml;&szlig;en</p>
+    <p class="signature">{{ company.geschaeftsfuehrer }}</p>
+</div>
+{% endblock %}

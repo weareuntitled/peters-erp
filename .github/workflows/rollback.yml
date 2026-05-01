@@ -1,0 +1,86 @@
+name: Rollback Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      previous_tag:
+        description: 'Tag to rollback to (e.g., production-main-42)'
+        required: true
+        type: string
+      confirm:
+        description: 'Type "rollback-production" to confirm'
+        required: true
+        type: string
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check confirmation
+        if: github.event.inputs.confirm != 'rollback-production'
+        run: |
+          echo "Confirmation failed. You must type 'rollback-production' to proceed."
+          exit 1
+      
+      - name: Verify tag format
+        run: |
+          if [[ ! "${{ github.event.inputs.previous_tag }}" =~ ^production- ]]; then
+            echo "Invalid tag format. Must start with 'production-'"
+            exit 1
+          fi
+          echo "Rolling back to: ${{ github.event.inputs.previous_tag }}"
+
+  rollback:
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+      - name: Rollback Production
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -e
+            
+            cd /opt/gswin-erp
+            
+            # Ensure scripts are executable
+            chmod +x scripts/*.sh
+            
+            # Run rollback
+            ./scripts/rollback-production.sh "${{ github.event.inputs.previous_tag }}"
+            
+            echo "Rollback complete!"
+
+      - name: Health Check
+        if: success()
+        run: |
+          echo "Waiting for production to be ready..."
+          sleep 15
+          curl -f https://gswin-erp.com/api/health || echo "Health check warning after rollback"
+
+      - name: Send Email Notification
+        if: always()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.SMTP_HOST }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.SMTP_USER }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          to: ${{ secrets.EMAIL_TO }}
+          subject: "⚠️ Production Rolled Back - Peters ERP"
+          body: |
+            Production has been rolled back.
+            
+            Rollback to: ${{ github.event.inputs.previous_tag }}
+            Rolled back by: ${{ github.actor }}
+            Time: ${{ github.event.repository.updated_at }}
+            
+            Access: https://gswin-erp.com
+            
+            Please verify the application is working correctly.
+            
+            If issues persist, check GitHub Actions logs.

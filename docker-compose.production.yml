@@ -1,0 +1,40 @@
+services:
+  backend:
+    image: ghcr.io/weareuntitled/peters-fin/backend:latest
+    container_name: peters-fin-prod-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount data directory for SQLite persistence
+      - ../data/production:/app/data
+      # Mount static files (logos, uploads)
+      - ../static:/app/static
+    environment:
+      - DATABASE_URL=sqlite:///app/data/gswin_modern.db
+      - API_URL=https://gswin-erp.com/api
+      - SECRET_KEY=${SECRET_KEY}
+      - LOG_LEVEL=info
+      - CORS_ORIGINS=https://gswin-erp.com,https://www.gswin-erp.com
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    image: ghcr.io/weareuntitled/peters-fin/frontend:latest
+    container_name: peters-fin-prod-frontend
+    ports:
+      - "5173:80"
+    environment:
+      - VITE_API_URL=https://gswin-erp.com/api
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+
+networks:
+  default:
+    name: peters-fin-production

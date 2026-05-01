@@ -1,0 +1,71 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+    with:
+      backend_tag: ghcr.io/weareuntitled/peters-fin/backend:staging-${{ github.sha }}
+      frontend_tag: ghcr.io/weareuntitled/peters-fin/frontend:staging-${{ github.sha }}
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: staging
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Staging VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script_stop: true
+          script: |
+            set -e
+            export TAG="staging-${{ github.sha }}"
+            echo "Deploying staging with tag: $TAG"
+            
+            cd /opt/gswin-erp
+            
+            # Ensure scripts are executable
+            chmod +x scripts/*.sh
+            
+            # Run staging deployment
+            ./scripts/deploy-staging.sh "$TAG"
+            
+            echo "Staging deployment complete!"
+
+      - name: Send Email Notification
+        if: always()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.SMTP_HOST }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.SMTP_USER }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          to: ${{ secrets.EMAIL_TO }}
+          from: GitHub Actions <noreply@gswin-erp.com>
+          subject: "${{ job.status == 'success' && '✅' || '❌' }} Staging Deployed - Peters ERP"
+          body: |
+            Staging deployment status: ${{ job.status }}
+            
+            Commit: ${{ github.sha }}
+            Author: ${{ github.actor }}
+            Message: ${{ github.event.head_commit.message }}
+            
+            Access: https://staging.gswin-erp.com
+            
+            ${ job.status == 'success' && '✅ Deployment successful!' || '❌ Deployment failed. Check GitHub Actions logs.' }
+
+      - name: Health Check
+        if: success()
+        run: |
+          echo "Waiting for staging to be ready..."
+          sleep 15
+          curl -f https://staging.gswin-erp.com/api/health || echo "Health check warning - service may still be starting"

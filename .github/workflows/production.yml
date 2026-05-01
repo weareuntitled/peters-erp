@@ -1,0 +1,147 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      git_ref:
+        description: 'Git ref to deploy (tag, branch, or SHA)'
+        required: true
+        default: 'main'
+        type: string
+      confirm:
+        description: 'Type "deploy-to-production" to confirm'
+        required: true
+        type: string
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check confirmation
+        if: github.event.inputs.confirm != 'deploy-to-production'
+        run: |
+          echo "Confirmation failed. You must type 'deploy-to-production' to proceed."
+          exit 1
+      
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.git_ref }}
+      
+      - name: Verify ref exists
+        run: |
+          git log --oneline -1
+          echo "Deploying ref: ${{ github.event.inputs.git_ref }}"
+
+  build:
+    needs: validate
+    uses: ./.github/workflows/build.yml
+    with:
+      backend_tag: ghcr.io/weareuntitled/peters-fin/backend:production-${{ github.event.inputs.git_ref }}-${{ github.run_number }}
+      frontend_tag: ghcr.io/weareuntitled/peters-fin/frontend:production-${{ github.event.inputs.git_ref }}-${{ github.run_number }}
+
+  backup:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Backup Production Database
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -e
+            BACKUP_DIR="/opt/gswin-erp/production/data/backups"
+            mkdir -p "$BACKUP_DIR"
+            
+            # Backup with timestamp
+            BACKUP_FILE="gswin_modern.db.backup-$(date +%Y%m%d-%H%M%S).sqlite"
+            cp /opt/gswin-erp/production/data/gswin_modern.db "$BACKUP_DIR/$BACKUP_FILE"
+            
+            # Keep only last 10 backups
+            ls -t "$BACKUP_DIR"/gswin_modern.db.backup-*.sqlite | tail -n +11 | xargs rm -f
+            
+            echo "Database backed up to: $BACKUP_DIR/$BACKUP_FILE"
+            echo "Latest backups:"
+            ls -lh "$BACKUP_DIR"
+
+      - name: Backup Email
+        if: success()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.SMTP_HOST }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.SMTP_USER }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          to: ${{ secrets.EMAIL_TO }}
+          subject: "💾 Production Database Backup - Peters ERP"
+          body: |
+            Production database has been backed up before deployment.
+            
+            Deploying ref: ${{ github.event.inputs.git_ref }}
+            Run number: ${{ github.run_number }}
+            
+            Next step: Deploying application...
+
+  deploy:
+    needs: [validate, build, backup]
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.git_ref }}
+
+      - name: Deploy to Production VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script_stop: true
+          script: |
+            set -e
+            export TAG="production-${{ github.event.inputs.git_ref }}-${{ github.run_number }}"
+            echo "Deploying production with tag: $TAG"
+            
+            cd /opt/gswin-erp
+            
+            # Ensure scripts are executable
+            chmod +x scripts/*.sh
+            
+            # Run production deployment
+            ./scripts/deploy-production.sh "$TAG"
+            
+            echo "Production deployment complete!"
+
+      - name: Health Check
+        if: success()
+        run: |
+          echo "Waiting for production to be ready..."
+          sleep 15
+          curl -f https://gswin-erp.com/api/health || echo "Health check warning - service may still be starting"
+
+      - name: Send Email Notification
+        if: always()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.SMTP_HOST }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.SMTP_USER }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          to: ${{ secrets.EMAIL_TO }}
+          subject: "${{ job.status == 'success' && '🚀' || '❌' }} Production Deployed - Peters ERP"
+          body: |
+            Production deployment status: ${{ job.status }}
+            
+            Git Ref: ${{ github.event.inputs.git_ref }}
+            Commit: ${{ github.sha }}
+            Deployed by: ${{ github.actor }}
+            Run number: ${{ github.run_number }}
+            
+            Access: https://gswin-erp.com
+            
+            ${ job.status == 'success' && '🚀 Deployment successful!' || '❌ Deployment failed. Check GitHub Actions logs.' }
+            
+            To rollback, go to GitHub Actions and run "Rollback Production" workflow.

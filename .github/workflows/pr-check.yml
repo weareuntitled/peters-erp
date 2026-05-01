@@ -1,0 +1,37 @@
+name: PR Check
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Build Backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: false
+          tags: peters-fin/backend:pr-check
+          cache-from: type=gha,scope=backend
+      
+      - name: Build Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: false
+          tags: peters-fin/frontend:pr-check
+          cache-from: type=gha,scope=frontend
+      
+      - name: Test Backend Startup
+        run: |
+          # Start backend container briefly to verify it doesn't crash
+          docker run -d --name backend-test peters-fin/backend:pr-check
+          sleep 5
+          docker ps | grep backend-test || exit 1
+          docker logs backend-test --tail 20
+          docker stop backend-test
+          docker rm backend-test

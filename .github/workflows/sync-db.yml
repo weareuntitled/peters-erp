@@ -1,0 +1,62 @@
+name: Sync DB to Staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "sync-staging-db" to confirm (will overwrite staging data with production data)'
+        required: true
+        type: string
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check confirmation
+        if: github.event.inputs.confirm != 'sync-staging-db'
+        run: |
+          echo "Confirmation failed. You must type 'sync-staging-db' to proceed."
+          exit 1
+
+  sync:
+    runs-on: ubuntu-latest
+    needs: validate
+    environment: staging
+    
+    steps:
+      - name: Sync Staging Database
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -e
+            
+            cd /opt/gswin-erp
+            
+            # Ensure scripts are executable
+            chmod +x scripts/*.sh
+            
+            # Run sync
+            ./scripts/sync-db-to-staging.sh
+            
+            echo "Database sync complete!"
+
+      - name: Send Email Notification
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.SMTP_HOST }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.SMTP_USER }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          to: ${{ secrets.EMAIL_TO }}
+          subject: "🔄 Staging Database Synced - Peters ERP"
+          body: |
+            Staging database has been synchronized with production.
+            
+            Synced by: ${{ github.actor }}
+            Time: ${{ github.event.repository.updated_at }}
+            
+            Staging now has a fresh copy of production data for testing.
+            Access: https://staging.gswin-erp.com

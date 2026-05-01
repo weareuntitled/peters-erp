@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ meta.title }} {{ meta.number }}</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- Header Row: Absenderzeile -->
+    <div class="header-row">
+        {% if company.name or company.strasse %}
+        <div class="absenderzeile">
+            {{ company.name }}{% if company.strasse %} · {{ company.strasse }}{% endif %}{% if company.plz or company.ort %} · {{ company.plz }} {{ company.ort }}{% endif %}{% if company.tel %} · Tel {{ company.tel }}{% endif %}{% if company.email %} · {{ company.email }}{% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Separator Line -->
+    <div style="border-bottom: 0.5pt solid #ddd; margin-bottom: 6mm;"></div>
+
+    <!-- Dokumentenkopf: Empfänger links, Meta + Logo rechts -->
+    <div class="dokumentenkopf">
+        <div class="empfaenger">
+            <span style="font-weight: bold;">{% if kunde.vorname %}{{ kunde.vorname }} {{ kunde.name }}{% else %}{{ kunde.name }}{% endif %}</span>
+            <span style="font-weight: normal;">
+                {% if kunde.strasse %}<br>{{ kunde.strasse }}{% endif %}
+                {% if kunde.plz or kunde.ort %}<br>{{ kunde.plz }} {{ kunde.ort }}{% endif %}
+                {% if kunde.land and kunde.land != "Deutschland" %}<br>{{ kunde.land }}{% endif %}
+            </span>
+        </div>
+
+        <div class="meta-side">
+            {% if company.logo_base64 %}
+            <div style="text-align: right; margin-bottom: 1mm;">
+                <img src="{{ company.logo_base64 }}" class="logo-img" alt="Logo" style="height: 28mm;">
+            </div>
+            {% endif %}
+            <div class="meta-block">
+                <div class="meta-row">
+                <span class="meta-label">{{ meta.title }}:</span>
+                <span class="meta-value">{{ meta.number }}</span>
+            </div>
+            {% if kunde.kundnr %}
+            <div class="meta-row">
+                <span class="meta-label">Kd.-Nr.:</span>
+                <span class="meta-value">{{ kunde.kundnr }}</span>
+            </div>
+            {% endif %}
+            <div class="meta-row">
+                <span class="meta-label">Datum:</span>
+                <span class="meta-value">{{ meta.datum_formatted }}</span>
+            </div>
+            {% if meta.liefertermin_formatted %}
+            <div class="meta-row">
+                <span class="meta-label">Liefertermin:</span>
+                <span class="meta-value">{{ meta.liefertermin_formatted }}</span>
+            </div>
+            {% endif %}
+            {% block extra_meta %}{% endblock %}
+        </div>
+    </div>
+    </div>
+
+    <!-- Titel -->
+    <h1 class="doc-title">{{ meta.title }} {{ meta.number }}</h1>
+
+    <!-- Einleitung -->
+    {% block intro %}{% endblock %}
+
+    <!-- Freitext Kopf -->
+    {% if document.kopftext %}
+    <p class="kopftext">{{ document.kopftext }}</p>
+    {% endif %}
+
+    <!-- Positionen -->
+    {% if positionen %}
+        {% if grouped_positionen %}
+            {% for group in grouped_positionen %}
+            <div class="warengruppe-block">
+                <div class="warengruppe-titel">{{ group.name }}</div>
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            {% if vorlage.mit_positionsnummern %}<th class="col-pos">Pos.</th>{% endif %}
+                            <th class="col-desc">Beschreibung</th>
+                            <th class="col-qty">Menge</th>
+                            <th class="col-unit">Einheit</th>
+                            {% if vorlage.mit_einzelpreisen %}<th class="col-price">Einzelpreis</th>{% endif %}
+                            <th class="col-total">Gesamt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pos in group.positionen %}
+                        <tr>
+                            {% if vorlage.mit_positionsnummern %}<td class="col-pos">{{ pos.pos }}</td>{% endif %}
+                            <td class="col-desc">{{ pos.bezeichnung }}</td>
+                            <td class="col-qty">{{ pos.menge }}</td>
+                            <td class="col-unit">{{ pos.einheit }}</td>
+                            {% if vorlage.mit_einzelpreisen %}<td class="col-price">{{ pos.einzelpreis_formatted }}</td>{% endif %}
+                            <td class="col-total">{{ pos.gesamtpreis_formatted }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <div class="warengruppe-summe">Zwischensumme {{ group.name }}: <strong>{{ group.subtotal_formatted }}</strong></div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        {% if vorlage.mit_positionsnummern %}<th class="col-pos">Pos.</th>{% endif %}
+                        <th class="col-desc">Beschreibung</th>
+                        <th class="col-qty">Menge</th>
+                        <th class="col-unit">Einheit</th>
+                        {% if vorlage.mit_einzelpreisen %}<th class="col-price">Einzelpreis</th>{% endif %}
+                        <th class="col-total">Gesamt</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pos in positionen %}
+                    <tr>
+                        {% if vorlage.mit_positionsnummern %}<td class="col-pos">{{ pos.pos }}</td>{% endif %}
+                        <td class="col-desc">{{ pos.bezeichnung }}</td>
+                        <td class="col-qty">{{ pos.menge }}</td>
+                        <td class="col-unit">{{ pos.einheit }}</td>
+                        {% if vorlage.mit_einzelpreisen %}<td class="col-price">{{ pos.einzelpreis_formatted }}</td>{% endif %}
+                        <td class="col-total">{{ pos.gesamtpreis_formatted }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    {% else %}
+    <p class="no-items">Keine Positionen vorhanden.</p>
+    {% endif %}
+
+    <!-- Summen -->
+    <div class="summen-block">
+        {% if totals.warengruppen %}
+            {% for wg in totals.warengruppen %}
+            <div class="summe-row summe-wg">
+                <span>{{ wg.name }} ({{ wg.count }} Pos.)</span>
+                <span>{{ wg.subtotal_formatted }}</span>
+            </div>
+            {% endfor %}
+        {% endif %}
+        <div class="summe-row">
+            <span>Netto:</span>
+            <span>{{ totals.subtotal_formatted }}</span>
+        </div>
+        <div class="summe-row">
+            <span>MwSt. ({{ totals.mwst_rate_formatted }}):</span>
+            <span>{{ totals.mwst_betrag_formatted }}</span>
+        </div>
+        <div class="summe-row summe-total">
+            <span><strong>Gesamtbetrag (brutto):</strong></span>
+            <span><strong>{{ totals.total_formatted }}</strong></span>
+        </div>
+    </div>
+
+    <!-- Steuer-Hinweise -->
+    {% if company.text_35a or company.info_freistellung %}
+    <div class="steuer-hinweise">
+        {% if company.text_35a %}
+        <p><strong>§ 35a EStG:</strong> {{ company.text_35a }}</p>
+        {% endif %}
+        {% if company.info_freistellung %}
+        <p><strong>Freistellung:</strong> {{ company.info_freistellung }}</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Freitext Fuss -->
+    {% if document.fusstext %}
+    <p class="fusstext">{{ document.fusstext }}</p>
+    {% endif %}
+
+    <!-- Zahlungsbedingungen - only for RE -->
+    {% if document.typ == 'RE' and totals.total > 0 %}
+    <div class="payment-terms">
+        <p>Bitte überweisen Sie den Gesamtbetrag von {{ totals.total_formatted }} innerhalb von {% if company.zahlungsziel %}{{ company.zahlungsziel }}{% else %}14{% endif %} Tagen auf unser unten angegebenes Konto.</p>
+    </div>
+    {% endif %}
+
+    <!-- Schlusstext -->
+    {% block closing %}{% endblock %}
+
+    <!-- Bemerkungen -->
+    {% if document.bemerkung %}
+    <div class="bemerkungen">
+        <strong>Bemerkungen:</strong> {{ document.bemerkung }}
+    </div>
+    {% endif %}
+
+    <!-- Fusszeile -->
+    <footer class="fusszeile">
+        <div class="fuss-col">
+            <strong>{{ company.name }}</strong>
+            {% if company.strasse %}{{ company.strasse }}, {{ company.plz }} {{ company.ort }}{% endif %}
+        </div>
+        <div class="fuss-col fuss-center">
+            {% if company.steuernr %}Steuernr.: {{ company.steuernr }}{% endif %}
+            {% if company.ust_id %}<br>USt-IdNr.: {{ company.ust_id }}{% endif %}
+            {% if company.handelsregister %}<br>{{ company.handelsregister }}{% endif %}
+            {% if company.handwerkskammer %}<br>{{ company.handwerkskammer }}{% endif %}
+        </div>
+        <div class="fuss-col fuss-rechts">
+            {{ company.bank }}
+            {% if company.iban %}<br>IBAN: {{ company.iban }}{% endif %}
+            {% if company.bic %}<br>BIC: {{ company.bic }}{% endif %}
+        </div>
+    </footer>
+
+</body>
+</html>
