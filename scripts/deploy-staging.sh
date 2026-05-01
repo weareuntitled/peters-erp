@@ -26,11 +26,7 @@ git pull origin main
 export BACKEND_IMAGE="ghcr.io/weareuntitled/peters-erp/backend:$TAG"
 export FRONTEND_IMAGE="ghcr.io/weareuntitled/peters-erp/frontend:$TAG"
 
-# Login to GHCR (needed for private images)
-echo "Logging into GHCR..."
-echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_USER" --password-stdin 2>/dev/null || true
-
-# Pull new images
+# Pull new images (docker login is done by caller)
 echo "Pulling images..."
 docker pull "$BACKEND_IMAGE" || { echo "ERROR: Could not pull backend image"; exit 1; }
 docker pull "$FRONTEND_IMAGE" || { echo "ERROR: Could not pull frontend image"; exit 1; }

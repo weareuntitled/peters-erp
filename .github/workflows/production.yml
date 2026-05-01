@@ -91,13 +91,20 @@ jobs:
             export TAG="production-${{ github.event.inputs.git_ref }}-${{ github.run_number }}"
             echo "Deploying production with tag: $TAG"
             
-            cd /opt/peters-erp
+            # Login to GHCR for pulling private images
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
             
-            # Ensure scripts are executable
-            chmod +x scripts/*.sh
+            # Pull latest repo first
+            cd /opt/peters-erp/repo
+            git fetch origin main
+            git reset --hard origin/main
+            
+            # Copy fresh scripts
+            cp scripts/*.sh /opt/peters-erp/scripts/
+            chmod +x /opt/peters-erp/scripts/*.sh
             
             # Run production deployment
-            ./scripts/deploy-production.sh "$TAG"
+            /opt/peters-erp/scripts/deploy-production.sh "$TAG"
             
             echo "Production deployment complete!"
 

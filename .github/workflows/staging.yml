@@ -29,18 +29,26 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script_stop: true
+          envs: GITHUB_TOKEN,GITHUB_ACTOR
           script: |
             set -e
             export TAG="staging-${{ github.sha }}"
             echo "Deploying staging with tag: $TAG"
             
-            cd /opt/peters-erp
+            # Login to GHCR for pulling private images
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
             
-            # Ensure scripts are executable
-            chmod +x scripts/*.sh
+            # Pull latest repo first
+            cd /opt/peters-erp/repo
+            git fetch origin main
+            git reset --hard origin/main
+            
+            # Copy fresh scripts to /opt/peters-erp/scripts
+            cp scripts/*.sh /opt/peters-erp/scripts/
+            chmod +x /opt/peters-erp/scripts/*.sh
             
             # Run staging deployment
-            ./scripts/deploy-staging.sh "$TAG"
+            /opt/peters-erp/scripts/deploy-staging.sh "$TAG"
             
             echo "Staging deployment complete!"
 
