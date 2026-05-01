@@ -9,7 +9,7 @@ echo "  Peters ERP - VPS Setup"
 echo "=========================================="
 
 # Configuration
-REPO_URL="git@github.com:weareuntitled/peters-fin.git"
+REPO_URL="git@github.com:weareuntitled/peters-erp.git"
 VPS_DIR="/opt/peters-erp"
 DOMAIN_STAGING="staging.peters-erp.com"
 DOMAIN_PROD="peters-erp.com"

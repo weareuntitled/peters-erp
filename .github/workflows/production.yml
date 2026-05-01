@@ -34,6 +34,9 @@ jobs:
 
   build:
     needs: validate
+    permissions:
+      contents: read
+      packages: write
     uses: ./.github/workflows/build.yml
     with:
       backend_tag: ghcr.io/weareuntitled/peters-fin/backend:production-${{ github.event.inputs.git_ref }}-${{ github.run_number }}
