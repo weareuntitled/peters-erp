@@ -105,4 +105,4 @@ This will start:
 - n8n on port 5678
 - Ollama on port 11434
 
-The system is fully functional and ready for development.
+The system is fully functional and ready for development."# peters-fin" 
