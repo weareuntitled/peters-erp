@@ -11,8 +11,8 @@ jobs:
       packages: write
     uses: ./.github/workflows/build.yml
     with:
-      backend_tag: ghcr.io/weareuntitled/peters-fin/backend:staging-${{ github.sha }}
-      frontend_tag: ghcr.io/weareuntitled/peters-fin/frontend:staging-${{ github.sha }}
+      backend_tag: ghcr.io/weareuntitled/peters-erp/backend:staging-${{ github.sha }}
+      frontend_tag: ghcr.io/weareuntitled/peters-erp/frontend:staging-${{ github.sha }}
 
   deploy:
     needs: build
@@ -34,7 +34,7 @@ jobs:
             export TAG="staging-${{ github.sha }}"
             echo "Deploying staging with tag: $TAG"
             
-            cd /opt/gswin-erp
+            cd /opt/peters-erp
             
             # Ensure scripts are executable
             chmod +x scripts/*.sh
@@ -45,15 +45,16 @@ jobs:
             echo "Staging deployment complete!"
 
       - name: Send Email Notification
-        if: always()
+        if: always() && secrets.SMTP_HOST != ''
         uses: dawidd6/action-send-mail@v3
+        continue-on-error: true
         with:
           server_address: ${{ secrets.SMTP_HOST }}
           server_port: ${{ secrets.SMTP_PORT }}
           username: ${{ secrets.SMTP_USER }}
           password: ${{ secrets.SMTP_PASSWORD }}
-          to: ${{ secrets.EMAIL_TO }}
-          from: GitHub Actions <noreply@gswin-erp.com>
+          to: djdanep@gmail.com
+          from: GitHub Actions <noreply@peters-erp.com>
           subject: "${{ job.status == 'success' && '✅' || '❌' }} Staging Deployed - Peters ERP"
           body: |
             Staging deployment status: ${{ job.status }}
@@ -62,13 +63,12 @@ jobs:
             Author: ${{ github.actor }}
             Message: ${{ github.event.head_commit.message }}
             
-            Access: https://staging.gswin-erp.com
-            
-            ${ job.status == 'success' && '✅ Deployment successful!' || '❌ Deployment failed. Check GitHub Actions logs.' }
+            Access: https://staging.peters-erp.com
 
       - name: Health Check
         if: success()
+        continue-on-error: true
         run: |
           echo "Waiting for staging to be ready..."
           sleep 15
-          curl -f https://staging.gswin-erp.com/api/health || echo "Health check warning - service may still be starting"
+          curl -f https://staging.peters-erp.com/api/health || echo "Health check warning - service may still be starting"

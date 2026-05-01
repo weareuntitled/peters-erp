@@ -194,14 +194,14 @@ systemctl enable unattended-upgrades
 # 14. Daily cleanup
 echo ""
 echo "🧹 Setting up daily cleanup..."
-cat > /etc/cron.daily/peters-fin-cleanup << 'EOF'
+cat > /etc/cron.daily/peters-erp-cleanup << 'EOF'
 #!/bin/bash
 # Clean old Docker images, containers, and volumes
 docker system prune -f --filter "until=168h" > /dev/null 2>&1
 # Clean old backups (keep last 30 days)
-find /opt/gswin-erp/data -name "*.backup-*.sqlite" -mtime +30 -delete > /dev/null 2>&1
+find /opt/peters-erp/data -name "*.backup-*.sqlite" -mtime +30 -delete > /dev/null 2>&1
 EOF
-chmod +x /etc/cron.daily/peters-fin-cleanup
+chmod +x /etc/cron.daily/peters-erp-cleanup
 
 # 15. SSL Certificates (prompt for DNS setup)
 echo ""

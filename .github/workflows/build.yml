@@ -37,7 +37,7 @@ jobs:
           push: true
           tags: |
             ${{ inputs.backend_tag }}
-            ghcr.io/weareuntitled/peters-fin/backend:latest
+            ghcr.io/weareuntitled/peters-erp/backend:latest
           cache-from: type=gha,scope=backend
           cache-to: type=gha,mode=max,scope=backend
           platforms: linux/amd64
@@ -68,7 +68,7 @@ jobs:
           push: true
           tags: |
             ${{ inputs.frontend_tag }}
-            ghcr.io/weareuntitled/peters-fin/frontend:latest
+            ghcr.io/weareuntitled/peters-erp/frontend:latest
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
           platforms: linux/amd64

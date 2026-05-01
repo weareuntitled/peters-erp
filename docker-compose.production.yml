@@ -1,7 +1,7 @@
 services:
   backend:
-    image: ghcr.io/weareuntitled/peters-fin/backend:latest
-    container_name: peters-fin-prod-backend
+    image: ghcr.io/weareuntitled/peters-erp/backend:latest
+    container_name: peters-erp-prod-backend
     ports:
       - "8000:8000"
     volumes:
@@ -11,10 +11,10 @@ services:
       - ../static:/app/static
     environment:
       - DATABASE_URL=sqlite:///app/data/gswin_modern.db
-      - API_URL=https://gswin-erp.com/api
+      - API_URL=https://peters-erp.com/api
       - SECRET_KEY=${SECRET_KEY}
       - LOG_LEVEL=info
-      - CORS_ORIGINS=https://gswin-erp.com,https://www.gswin-erp.com
+      - CORS_ORIGINS=https://peters-erp.com,https://www.peters-erp.com
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
@@ -24,12 +24,12 @@ services:
       start_period: 10s
 
   frontend:
-    image: ghcr.io/weareuntitled/peters-fin/frontend:latest
-    container_name: peters-fin-prod-frontend
+    image: ghcr.io/weareuntitled/peters-erp/frontend:latest
+    container_name: peters-erp-prod-frontend
     ports:
       - "5173:80"
     environment:
-      - VITE_API_URL=https://gswin-erp.com/api
+      - VITE_API_URL=https://peters-erp.com/api
     restart: unless-stopped
     depends_on:
       backend:
@@ -37,4 +37,4 @@ services:
 
 networks:
   default:
-    name: peters-fin-production
+    name: peters-erp-production

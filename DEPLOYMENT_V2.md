@@ -13,7 +13,7 @@ This guide sets up automatic deployment via GitHub Actions to your Hostinger VPS
 
 - VPS with Ubuntu 24.04 LTS
 - Domain names configured (staging and production)
-- GitHub repository: `weareuntitled/peters-fin`
+- GitHub repository: `weareuntitled/peters-erp`
 - VPS IP: `2.57.91.91`
 
 ---
@@ -69,14 +69,14 @@ chmod 755 /opt/peters-erp
 ### 1.5 Clone Repository
 ```bash
 cd /opt/peters-erp
-git clone weareuntitled/peters-fin.git repo
+git clone weareuntitled/peters-erp.git repo
 cd repo
 ```
 
 ### 1.6 Setup Environment Files
 ```bash
 # Staging
-cat > /opt/gswin-erp/.env.staging << 'EOF'
+cat > /opt/peters-erp/.env.staging << 'EOF'
 SECRET_KEY=change-me-to-random-string-for-staging
 DATABASE_URL=sqlite:///app/data/gswin_modern.db
 API_URL=https://{STAGING_DOMAIN}/api
@@ -84,7 +84,7 @@ CORS_ORIGINS=https://{STAGING_DOMAIN},http://localhost:5173
 EOF
 
 # Production
-cat > /opt/gswin-erp/.env.production << 'EOF'
+cat > /opt/peters-erp/.env.production << 'EOF'
 SECRET_KEY=CHANGE-ME-TO-STRONG-RANDOM-STRING
 DATABASE_URL=sqlite:///app/data/gswin_modern.db
 API_URL=https://{PROD_DOMAIN}/api
@@ -150,7 +150,7 @@ certbot renew --dry-run
 ## Phase 4: GitHub Setup
 
 ### 4.1 Add GitHub Secrets
-Go to: `https://github.com/weareuntitled/peters-fin/settings/secrets/actions`
+Go to: `https://github.com/weareuntitled/peters-erp/settings/secrets/actions`
 
 | Secret Name | Value |
 |-------------|-------|
@@ -167,13 +167,13 @@ Go to: `https://github.com/weareuntitled/peters-fin/settings/secrets/actions`
 On your local machine:
 ```bash
 # Windows PowerShell
-ssh-keygen -t ed25519 -C "github-actions-deploy" -f "$env:USERPROFILE\.ssh\peters-fin-deploy"
+ssh-keygen -t ed25519 -C "github-actions-deploy" -f "$env:USERPROFILE\.ssh\peters-erp-deploy"
 
 # Copy public key to VPS
-Get-Content "$env:USERPROFILE\.ssh\peters-fin-deploy.pub" | ssh root@2.57.91.91 "cat >> ~/.ssh/authorized_keys"
+Get-Content "$env:USERPROFILE\.ssh\peters-erp-deploy.pub" | ssh root@2.57.91.91 "cat >> ~/.ssh/authorized_keys"
 
 # Copy private key to GitHub
-Get-Content "$env:USERPROFILE\.ssh\peters-fin-deploy" | Set-Clipboard
+Get-Content "$env:USERPROFILE\.ssh\peters-erp-deploy" | Set-Clipboard
 # Paste into SSH_KEY secret
 ```
 
@@ -257,12 +257,12 @@ cd /opt/peters-erp/repo
 ### View Logs
 ```bash
 # Staging
-docker logs -f peters-fin-staging-backend
-docker logs -f peters-fin-staging-frontend
+docker logs -f peters-erp-staging-backend
+docker logs -f peters-erp-staging-frontend
 
 # Production
-docker logs -f peters-fin-prod-backend
-docker logs -f peters-fin-prod-frontend
+docker logs -f peters-erp-prod-backend
+docker logs -f peters-erp-prod-frontend
 ```
 
 ### Restart Services

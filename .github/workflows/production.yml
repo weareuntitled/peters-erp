@@ -39,8 +39,8 @@ jobs:
       packages: write
     uses: ./.github/workflows/build.yml
     with:
-      backend_tag: ghcr.io/weareuntitled/peters-fin/backend:production-${{ github.event.inputs.git_ref }}-${{ github.run_number }}
-      frontend_tag: ghcr.io/weareuntitled/peters-fin/frontend:production-${{ github.event.inputs.git_ref }}-${{ github.run_number }}
+      backend_tag: ghcr.io/weareuntitled/peters-erp/backend:production-${{ github.event.inputs.git_ref }}-${{ github.run_number }}
+      frontend_tag: ghcr.io/weareuntitled/peters-erp/frontend:production-${{ github.event.inputs.git_ref }}-${{ github.run_number }}
 
   backup:
     runs-on: ubuntu-latest
@@ -54,37 +54,20 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             set -e
-            BACKUP_DIR="/opt/gswin-erp/production/data/backups"
+            BACKUP_DIR="/opt/peters-erp/data/production/backups"
             mkdir -p "$BACKUP_DIR"
             
-            # Backup with timestamp
-            BACKUP_FILE="gswin_modern.db.backup-$(date +%Y%m%d-%H%M%S).sqlite"
-            cp /opt/gswin-erp/production/data/gswin_modern.db "$BACKUP_DIR/$BACKUP_FILE"
+            # Backup with timestamp (only if DB exists)
+            if [ -f /opt/peters-erp/data/production/gswin_modern.db ]; then
+              BACKUP_FILE="gswin_modern.db.backup-$(date +%Y%m%d-%H%M%S).sqlite"
+              cp /opt/peters-erp/data/production/gswin_modern.db "$BACKUP_DIR/$BACKUP_FILE"
+              echo "Database backed up to: $BACKUP_DIR/$BACKUP_FILE"
+            else
+              echo "No database found to backup (fresh install)"
+            fi
             
             # Keep only last 10 backups
-            ls -t "$BACKUP_DIR"/gswin_modern.db.backup-*.sqlite | tail -n +11 | xargs rm -f
-            
-            echo "Database backed up to: $BACKUP_DIR/$BACKUP_FILE"
-            echo "Latest backups:"
-            ls -lh "$BACKUP_DIR"
-
-      - name: Backup Email
-        if: success()
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: ${{ secrets.SMTP_HOST }}
-          server_port: ${{ secrets.SMTP_PORT }}
-          username: ${{ secrets.SMTP_USER }}
-          password: ${{ secrets.SMTP_PASSWORD }}
-          to: ${{ secrets.EMAIL_TO }}
-          subject: "💾 Production Database Backup - Peters ERP"
-          body: |
-            Production database has been backed up before deployment.
-            
-            Deploying ref: ${{ github.event.inputs.git_ref }}
-            Run number: ${{ github.run_number }}
-            
-            Next step: Deploying application...
+            ls -t "$BACKUP_DIR"/gswin_modern.db.backup-*.sqlite 2>/dev/null | tail -n +11 | xargs rm -f 2>/dev/null || true
 
   deploy:
     needs: [validate, build, backup]
@@ -108,7 +91,7 @@ jobs:
             export TAG="production-${{ github.event.inputs.git_ref }}-${{ github.run_number }}"
             echo "Deploying production with tag: $TAG"
             
-            cd /opt/gswin-erp
+            cd /opt/peters-erp
             
             # Ensure scripts are executable
             chmod +x scripts/*.sh
@@ -120,20 +103,23 @@ jobs:
 
       - name: Health Check
         if: success()
+        continue-on-error: true
         run: |
           echo "Waiting for production to be ready..."
           sleep 15
-          curl -f https://gswin-erp.com/api/health || echo "Health check warning - service may still be starting"
+          curl -f https://peters-erp.com/api/health || echo "Health check warning - service may still be starting"
 
       - name: Send Email Notification
         if: always()
+        continue-on-error: true
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: ${{ secrets.SMTP_HOST }}
           server_port: ${{ secrets.SMTP_PORT }}
           username: ${{ secrets.SMTP_USER }}
           password: ${{ secrets.SMTP_PASSWORD }}
-          to: ${{ secrets.EMAIL_TO }}
+          to: djdanep@gmail.com
+          from: GitHub Actions <noreply@peters-erp.com>
           subject: "${{ job.status == 'success' && '🚀' || '❌' }} Production Deployed - Peters ERP"
           body: |
             Production deployment status: ${{ job.status }}
@@ -143,8 +129,4 @@ jobs:
             Deployed by: ${{ github.actor }}
             Run number: ${{ github.run_number }}
             
-            Access: https://gswin-erp.com
-            
-            ${ job.status == 'success' && '🚀 Deployment successful!' || '❌ Deployment failed. Check GitHub Actions logs.' }
-            
-            To rollback, go to GitHub Actions and run "Rollback Production" workflow.
+            Access: https://peters-erp.com

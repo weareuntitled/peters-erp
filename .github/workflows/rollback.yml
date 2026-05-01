@@ -45,7 +45,7 @@ jobs:
           script: |
             set -e
             
-            cd /opt/gswin-erp
+            cd /opt/peters-erp
             
             # Ensure scripts are executable
             chmod +x scripts/*.sh
@@ -60,7 +60,7 @@ jobs:
         run: |
           echo "Waiting for production to be ready..."
           sleep 15
-          curl -f https://gswin-erp.com/api/health || echo "Health check warning after rollback"
+          curl -f https://peters-erp.com/api/health || echo "Health check warning after rollback"
 
       - name: Send Email Notification
         if: always()
@@ -79,7 +79,7 @@ jobs:
             Rolled back by: ${{ github.actor }}
             Time: ${{ github.event.repository.updated_at }}
             
-            Access: https://gswin-erp.com
+            Access: https://peters-erp.com
             
             Please verify the application is working correctly.
             

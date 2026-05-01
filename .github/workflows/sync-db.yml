@@ -33,7 +33,7 @@ jobs:
           script: |
             set -e
             
-            cd /opt/gswin-erp
+            cd /opt/peters-erp
             
             # Ensure scripts are executable
             chmod +x scripts/*.sh
@@ -59,4 +59,4 @@ jobs:
             Time: ${{ github.event.repository.updated_at }}
             
             Staging now has a fresh copy of production data for testing.
-            Access: https://staging.gswin-erp.com
+            Access: https://staging.peters-erp.com

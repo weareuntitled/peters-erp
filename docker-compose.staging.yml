@@ -1,7 +1,7 @@
 services:
   backend:
-    image: ghcr.io/weareuntitled/peters-fin/backend:latest
-    container_name: peters-fin-staging-backend
+    image: ghcr.io/weareuntitled/peters-erp/backend:latest
+    container_name: peters-erp-staging-backend
     ports:
       - "8001:8000"
     volumes:
@@ -11,10 +11,10 @@ services:
       - ../static:/app/static
     environment:
       - DATABASE_URL=sqlite:///app/data/gswin_modern.db
-      - API_URL=https://staging.gswin-erp.com/api
+      - API_URL=https://staging.peters-erp.com/api
       - SECRET_KEY=${SECRET_KEY:-staging-secret-key-change-me-12345}
       - LOG_LEVEL=debug
-      - CORS_ORIGINS=https://staging.gswin-erp.com,http://localhost:5173
+      - CORS_ORIGINS=https://staging.peters-erp.com,http://localhost:5173
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
@@ -24,12 +24,12 @@ services:
       start_period: 10s
 
   frontend:
-    image: ghcr.io/weareuntitled/peters-fin/frontend:latest
-    container_name: peters-fin-staging-frontend
+    image: ghcr.io/weareuntitled/peters-erp/frontend:latest
+    container_name: peters-erp-staging-frontend
     ports:
       - "5175:80"
     environment:
-      - VITE_API_URL=https://staging.gswin-erp.com/api
+      - VITE_API_URL=https://staging.peters-erp.com/api
     restart: unless-stopped
     depends_on:
       backend:
@@ -37,4 +37,4 @@ services:
 
 networks:
   default:
-    name: peters-fin-staging
+    name: peters-erp-staging

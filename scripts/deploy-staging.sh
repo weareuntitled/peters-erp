@@ -21,13 +21,13 @@ echo "=========================================="
 cd "$VPS_DIR/staging"
 
 # Update docker-compose to use specific tag
-sed -i "s|image: ghcr.io/weareuntitled/peters-fin/backend:.*|image: ghcr.io/weareuntitled/peters-fin/backend:$TAG|g" docker-compose.yml || true
-sed -i "s|image: ghcr.io/weareuntitled/peters-fin/frontend:.*|image: ghcr.io/weareuntitled/peters-fin/frontend:$TAG|g" docker-compose.yml || true
+sed -i "s|image: ghcr.io/weareuntitled/peters-erp/backend:.*|image: ghcr.io/weareuntitled/peters-erp/backend:$TAG|g" docker-compose.yml || true
+sed -i "s|image: ghcr.io/weareuntitled/peters-erp/frontend:.*|image: ghcr.io/weareuntitled/peters-erp/frontend:$TAG|g" docker-compose.yml || true
 
 # Pull new images
 echo "Pulling images..."
-docker pull "ghcr.io/weareuntitled/peters-fin/backend:$TAG"
-docker pull "ghcr.io/weareuntitled/peters-fin/frontend:$TAG"
+docker pull "ghcr.io/weareuntitled/peters-erp/backend:$TAG"
+docker pull "ghcr.io/weareuntitled/peters-erp/frontend:$TAG"
 
 # Stop old containers
 echo "Stopping old containers..."
@@ -57,7 +57,7 @@ done
 
 # Cleanup old images (keep last 10)
 echo "Cleaning up old images..."
-docker images "ghcr.io/weareuntitled/peters-fin/*" --format "{{.Repository}}:{{.Tag}} {{.CreatedAt}}" | \
+docker images "ghcr.io/weareuntitled/peters-erp/*" --format "{{.Repository}}:{{.Tag}} {{.CreatedAt}}" | \
     grep -v "latest" | \
     sort -k2 -r | \
     tail -n +11 | \
@@ -67,7 +67,7 @@ docker images "ghcr.io/weareuntitled/peters-fin/*" --format "{{.Repository}}:{{.
 echo ""
 echo "=========================================="
 echo "  Staging Deploy Complete!"
-echo "  URL: https://staging.gswin-erp.com"
+echo "  URL: https://staging.peters-erp.com"
 echo "  Backend: http://localhost:8001"
 echo "  Time: $(date)"
 echo "=========================================="

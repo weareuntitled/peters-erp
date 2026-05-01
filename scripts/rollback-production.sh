@@ -21,18 +21,18 @@ echo "=========================================="
 cd "$VPS_DIR/production"
 
 # Update docker-compose to use rollback tag
-sed -i "s|image: ghcr.io/weareuntitled/peters-fin/backend:.*|image: ghcr.io/weareuntitled/peters-fin/backend:$TAG|g" docker-compose.yml || true
-sed -i "s|image: ghcr.io/weareuntitled/peters-fin/frontend:.*|image: ghcr.io/weareuntitled/peters-fin/frontend:$TAG|g" docker-compose.yml || true
+sed -i "s|image: ghcr.io/weareuntitled/peters-erp/backend:.*|image: ghcr.io/weareuntitled/peters-erp/backend:$TAG|g" docker-compose.yml || true
+sed -i "s|image: ghcr.io/weareuntitled/peters-erp/frontend:.*|image: ghcr.io/weareuntitled/peters-erp/frontend:$TAG|g" docker-compose.yml || true
 
 # Pull rollback image (in case it was cleaned up)
 echo "Pulling rollback images..."
-docker pull "ghcr.io/weareuntitled/peters-fin/backend:$TAG" || {
+docker pull "ghcr.io/weareuntitled/peters-erp/backend:$TAG" || {
     echo "ERROR: Cannot pull rollback image $TAG"
     echo "Available production images:"
-    docker images "ghcr.io/weareuntitled/peters-fin/*" --format "{{.Repository}}:{{.Tag}}" | grep "production-"
+    docker images "ghcr.io/weareuntitled/peters-erp/*" --format "{{.Repository}}:{{.Tag}}" | grep "production-"
     exit 1
 }
-docker pull "ghcr.io/weareuntitled/peters-fin/frontend:$TAG" || {
+docker pull "ghcr.io/weareuntitled/peters-erp/frontend:$TAG" || {
     echo "ERROR: Cannot pull rollback image $TAG"
     exit 1
 }
@@ -67,6 +67,6 @@ echo ""
 echo "=========================================="
 echo "  Rollback Complete!"
 echo "  Current Version: $TAG"
-echo "  URL: https://gswin-erp.com"
+echo "  URL: https://peters-erp.com"
 echo "  Time: $(date)"
 echo "=========================================="

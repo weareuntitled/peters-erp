@@ -15,7 +15,7 @@ jobs:
         with:
           context: ./backend
           push: false
-          tags: peters-fin/backend:pr-check
+          tags: peters-erp/backend:pr-check
           cache-from: type=gha,scope=backend
       
       - name: Build Frontend
@@ -23,13 +23,13 @@ jobs:
         with:
           context: ./frontend
           push: false
-          tags: peters-fin/frontend:pr-check
+          tags: peters-erp/frontend:pr-check
           cache-from: type=gha,scope=frontend
       
       - name: Test Backend Startup
         run: |
           # Start backend container briefly to verify it doesn't crash
-          docker run -d --name backend-test peters-fin/backend:pr-check
+          docker run -d --name backend-test peters-erp/backend:pr-check
           sleep 5
           docker ps | grep backend-test || exit 1
           docker logs backend-test --tail 20
