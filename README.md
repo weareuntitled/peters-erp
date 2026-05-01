@@ -106,3 +106,4 @@ This will start:
 - Ollama on port 11434
 
 The system is fully functional and ready for development."# peters-fin" 
+"# peters-erp" 
