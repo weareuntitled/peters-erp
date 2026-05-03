@@ -14,6 +14,27 @@ const upgradeToHttpsIfNeeded = (value: string): string => {
 };
 
 const resolveApiBaseUrl = (): string => {
+  if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+    if (!rawApiBaseUrl) {
+      return '/api';
+    }
+
+    if (rawApiBaseUrl.startsWith('http://')) {
+      return '/api';
+    }
+
+    if (isAbsoluteUrl(rawApiBaseUrl)) {
+      try {
+        const configuredHost = new URL(rawApiBaseUrl).hostname;
+        if (configuredHost !== window.location.hostname) {
+          return '/api';
+        }
+      } catch {
+        return '/api';
+      }
+    }
+  }
+
   if (!rawApiBaseUrl) {
     return '/api';
   }
