@@ -2,11 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { Tab } from '@headlessui/react';
 import { PhotoIcon, TrashIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
-import axios from 'axios';
-import apiClient, { API_BASE_URL } from '../../api/apiClient';
+import apiClient, { buildStaticUrl } from '../../api/apiClient';
 import { useToast } from '../../components/ui/Toast';
-
-const BACKEND_URL = API_BASE_URL.replace('/api', '');
 
 interface FirmenEinstellungen {
   firmenname?: string;
@@ -66,9 +63,7 @@ const EinstellungenPage = () => {
       try {
         const response = await apiClient.get('/firmen-einstellungen/');
         reset(response.data);
-        if (response.data.logo_pfad) {
-          setLogo(`${BACKEND_URL}${response.data.logo_pfad}`);
-        }
+        setLogo(buildStaticUrl(response.data.logo_pfad));
         setLoading(false);
       } catch (error) {
         console.error('Error fetching settings:', error);
@@ -106,7 +101,7 @@ const EinstellungenPage = () => {
       const response = await apiClient.post('/firmen-einstellungen/logo', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      setLogo(`${BACKEND_URL}${response.data.logo_pfad}`);
+      setLogo(buildStaticUrl(response.data.logo_pfad));
       addToast('Logo erfolgreich hochgeladen', 'success');
     } catch (error) {
       console.error('Error uploading logo:', error);

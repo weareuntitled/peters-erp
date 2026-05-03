@@ -4,7 +4,7 @@ import { BellIcon, Cog6ToothIcon, ArrowRightOnRectangleIcon, MagnifyingGlassIcon
 import { useAtom } from 'jotai';
 import { useNavigate, Link } from 'react-router-dom';
 import { authAtom } from '../../stores/authStore';
-import apiClient from '../../api/apiClient';
+import apiClient, { buildStaticUrl } from '../../api/apiClient';
 
 interface DashboardHeaderProps {
   onToggleSidebar?: () => void;
@@ -67,8 +67,7 @@ const DashboardHeader = ({ onToggleSidebar }: DashboardHeaderProps) => {
     },
   });
 
-  const API_BASE_URL = import.meta.env.VITE_API_URL || '';
-  const logoUrl = settings?.logo_pfad ? `${API_BASE_URL}${settings.logo_pfad.replace('/app/static', '/static')}` : null;
+  const logoUrl = buildStaticUrl(settings?.logo_pfad);
 
   const performSearch = useCallback(async (q: string) => {
     if (q.length < 2) {

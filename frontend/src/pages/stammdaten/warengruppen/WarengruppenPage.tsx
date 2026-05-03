@@ -19,6 +19,7 @@ interface WarengruppeItem {
   revenue: number;
   margin: number;
   growth: number;
+  last_used: string | null;
 }
 
 interface WarengruppenAnalysis {
@@ -45,7 +46,7 @@ const chartBgColors = [
 
 const WarengruppenPage = () => {
   const navigate = useNavigate();
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>({ type: 'days', value: 30 });
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>({ type: 'all' });
   const [search, setSearch] = useState('');
 
   const apiParams = useMemo(() => {
@@ -215,6 +216,7 @@ const WarengruppenPage = () => {
                 <th className="py-3 px-4 w-36 text-right">UMSATZ</th>
                 <th className="py-3 px-4 w-20 text-right">MARGE</th>
                 <th className="py-3 px-4 w-24 text-right">WACHSTUM</th>
+                <th className="py-3 px-4 w-24 text-right">LETZTE VERW.</th>
                 <th className="py-3 px-4 w-12 text-center">AKTION</th>
               </tr>
             </thead>
@@ -230,6 +232,7 @@ const WarengruppenPage = () => {
                   <td className="py-2 px-4 text-right font-semibold tabular-nums">{formatCurrency(item.revenue)}</td>
                   <td className="py-2 px-4 text-right font-medium tabular-nums">{item.margin}%</td>
                   <td className="py-2 px-4 text-right font-bold tabular-nums">{item.growth > 0 ? '+' : ''}{item.growth}%</td>
+                  <td className="py-2 px-4 text-right font-medium tabular-nums text-slate-500">{item.last_used || 'N/A'}</td>
                   <td className="py-2 px-6 text-center">
                     <button className="text-slate-300 hover:text-sky-600 transition-colors">
                       <ChevronRightIcon className="h-4 w-4" />
@@ -239,7 +242,7 @@ const WarengruppenPage = () => {
               ))}
               {filteredItems.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-sm text-slate-500">
+                  <td colSpan={7} className="px-6 py-8 text-center text-sm text-slate-500">
                     Keine Warengruppen gefunden
                   </td>
                 </tr>

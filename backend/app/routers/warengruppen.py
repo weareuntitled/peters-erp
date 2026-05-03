@@ -100,23 +100,23 @@ async def warengruppen_analysis(
     from ..models.positionen import Position
     from ..models.artikel import Artikel
     from datetime import datetime, timedelta
-    from sqlmodel import select, func
+    from sqlmodel import select, func, literal
+    from sqlalchemy.orm import joinedload
 
     # 1. Determine date filter
     cutoff = None
     if year:
-        pass # Handle in python loop
+        pass
     elif days:
         cutoff = (datetime.now() - timedelta(days=days)).date()
     elif all_years:
         pass
     else:
-        # Default to 30 days
         cutoff = (datetime.now() - timedelta(days=30)).date()
 
     # 2. Get all RE docs first to filter by date (dataset is small)
     docs = session.exec(select(Dokument).where(Dokument.typ == 'RE')).all()
-    
+
     relevant_doc_ids = []
     prev_period_doc_ids = []
     for d in docs:
@@ -131,24 +131,37 @@ async def warengruppen_analysis(
                     relevant_doc_ids.append(d.id)
                 elif all_years:
                     relevant_doc_ids.append(d.id)
-                    
-                # Calculate previous period for growth
+
                 if cutoff and days:
                     prev_cutoff = cutoff - timedelta(days=days)
                     if prev_cutoff <= doc_date < cutoff:
                         prev_period_doc_ids.append(d.id)
             except ValueError:
                 pass
-                
+
     if not relevant_doc_ids:
-        relevant_doc_ids = [0] # dummy to avoid empty IN clause
+        relevant_doc_ids = [0]
     if not prev_period_doc_ids:
         prev_period_doc_ids = [0]
-        
+
+    # 3. Get last_used per warengruppe (most recent RE datum via dokument_positionen)
+    last_used_stmt = (
+        select(
+            Position.warengruppe_id,
+            func.max(Dokument.datum).label('last_used')
+        )
+        .join(Dokument, Dokument.id == Position.dokument_id)
+        .where(Dokument.typ == 'RE')
+        .where(Position.warengruppe_id.isnot(None))
+        .group_by(Position.warengruppe_id)
+    )
+    last_used_map = dict(session.exec(last_used_stmt).all())
+
+    # 4. Analysis query — only warengruppen with positions in relevant docs
     statement = (
         select(
-            Warengruppe, 
-            func.sum(Position.gesamtpreis), 
+            Warengruppe,
+            func.sum(Position.gesamtpreis),
             func.count(Position.id),
             func.sum(func.coalesce(Artikel.ek_preis, 0) * Position.menge)
         )
@@ -157,38 +170,38 @@ async def warengruppen_analysis(
         .where(Position.dokument_id.in_(relevant_doc_ids))
         .group_by(Warengruppe.id)
     )
-    
+
     prev_statement = (
         select(Warengruppe.id, func.sum(Position.gesamtpreis))
         .join(Position, Position.warengruppe_id == Warengruppe.id)
         .where(Position.dokument_id.in_(prev_period_doc_ids))
         .group_by(Warengruppe.id)
     )
-    
+
     results = session.exec(statement).all()
     prev_results = dict(session.exec(prev_statement).all())
-    
+
     analysis_items = []
     total_revenue = 0.0
     total_cost = 0.0
-    
+
     for wg, revenue, count, cost in results:
         revenue = float(revenue or 0)
         cost = float(cost or 0)
         total_revenue += revenue
         total_cost += cost
-        
+
         margin = 0.0
         if revenue > 0:
             margin = ((revenue - cost) / revenue) * 100
-            
+
         prev_rev = float(prev_results.get(wg.id, 0))
         growth = 0.0
         if prev_rev > 0:
             growth = ((revenue - prev_rev) / prev_rev) * 100
         elif revenue > 0 and prev_rev == 0:
-            growth = 100.0 # From 0 to something
-            
+            growth = 100.0
+
         analysis_items.append({
             "id": wg.id,
             "bezeichnung": wg.bezeichnung,
@@ -196,11 +209,12 @@ async def warengruppen_analysis(
             "count": count,
             "margin": round(margin, 1),
             "growth": round(growth, 1),
+            "last_used": last_used_map.get(wg.id),
         })
-        
+
     analysis_items.sort(key=lambda x: x['revenue'], reverse=True)
-    
-    # KPIs
+
+    # 5. KPIs
     active_articles = session.exec(select(func.count(Artikel.id)).where(Artikel.aktiv == 1)).one()
     available_years = sorted(list(set(datetime.strptime(d.datum, '%Y-%m-%d').year for d in docs if d.datum)), reverse=True)
     
