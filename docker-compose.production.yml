@@ -1,6 +1,7 @@
 services:
   backend:
     image: ghcr.io/weareuntitled/peters-erp/backend:${BACKEND_TAG:-latest}
+    pull_policy: never
     container_name: peters-erp-prod-backend
     ports:
       - "8000:8000"
@@ -24,6 +25,7 @@ services:
 
   frontend:
     image: ghcr.io/weareuntitled/peters-erp/frontend:${FRONTEND_TAG:-latest}
+    pull_policy: never
     container_name: peters-erp-prod-frontend
     ports:
       - "5173:80"
