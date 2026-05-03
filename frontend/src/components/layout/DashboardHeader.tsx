@@ -53,6 +53,10 @@ const DashboardHeader = ({ onToggleSidebar }: DashboardHeaderProps) => {
     },
   });
 
+  const unreadCount = notifications?.filter((n) => !n.is_read).length || 0;
+
+  const unreadCount = notifications?.filter((n) => !n.is_read).length || 0;
+
   const { data: settings } = useQuery<{ logo_pfad?: string }>({
     queryKey: ['firmen-einstellungen'],
     queryFn: async () => {
@@ -65,7 +69,7 @@ const DashboardHeader = ({ onToggleSidebar }: DashboardHeaderProps) => {
     },
   });
 
-  const BACKEND_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || '';
+  const BACKEND_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || window.location.origin;
   const logoUrl = settings?.logo_pfad ? `${BACKEND_URL}${settings.logo_pfad}` : null;
 
   const performSearch = useCallback(async (q: string) => {
