@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from .database import get_session, engine
+from .database import ensure_admin_user
 from .auth.router import router as auth_router
 from .routers import kunden, artikel, dokumente, warengruppen, zahlungen, vorlagen, positionen, dashboard, firmen_einstellungen
 from sqlmodel import Session, select
@@ -32,6 +33,7 @@ app.add_middleware(
 def init_db():
     from .database import init_db as db_init
     db_init()
+    ensure_admin_user()
 
 init_db()
 

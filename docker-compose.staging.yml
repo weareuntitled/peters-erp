@@ -15,6 +15,8 @@ services:
       - SECRET_KEY=${SECRET_KEY:-staging-secret-key-change-me-12345}
       - LOG_LEVEL=debug
       - CORS_ORIGINS=https://staging.peters-erp.com,http://localhost:5173
+      - GSWIN_ADMIN_USER=${GSWIN_ADMIN_USER:-admin}
+      - GSWIN_ADMIN_PASS=${GSWIN_ADMIN_PASS}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
@@ -27,7 +29,7 @@ services:
     image: ghcr.io/weareuntitled/peters-erp/frontend:latest
     container_name: peters-erp-staging-frontend
     ports:
-      - "5175:80"
+      - "5175:5174"
     environment:
       - VITE_API_URL=https://staging.peters-erp.com/api
     restart: unless-stopped

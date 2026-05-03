@@ -1,4 +1,6 @@
 import os
+import secrets
+import warnings
 from fastapi import APIRouter, Depends, HTTPException, status, Header, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import Session, select
@@ -10,9 +12,10 @@ import bcrypt
 from typing import Optional
 
 # Security configuration from environment
-SECRET_KEY = os.getenv("SECRET_KEY", None)
-if not SECRET_KEY or SECRET_KEY == "your-secret-key-here":
-    raise ValueError("SECRET_KEY environment variable must be set and strong")
+SECRET_KEY = os.getenv("SECRET_KEY", "")
+if not SECRET_KEY or SECRET_KEY in ("your-secret-key-here", "change-me-to-a-256-bit-random-key-or-generate-with-openssl-rand-hex-32"):
+    SECRET_KEY = secrets.token_hex(32)
+    warnings.warn("SECRET_KEY not set — auto-generated for this session. Set SECRET_KEY in .env for persistence.")
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
