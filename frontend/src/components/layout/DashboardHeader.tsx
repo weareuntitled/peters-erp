@@ -55,8 +55,6 @@ const DashboardHeader = ({ onToggleSidebar }: DashboardHeaderProps) => {
 
   const unreadCount = notifications?.filter((n) => !n.is_read).length || 0;
 
-  const unreadCount = notifications?.filter((n) => !n.is_read).length || 0;
-
   const { data: settings } = useQuery<{ logo_pfad?: string }>({
     queryKey: ['firmen-einstellungen'],
     queryFn: async () => {
