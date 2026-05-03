@@ -67,8 +67,8 @@ const DashboardHeader = ({ onToggleSidebar }: DashboardHeaderProps) => {
     },
   });
 
-  const BACKEND_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || window.location.origin;
-  const logoUrl = settings?.logo_pfad ? `${BACKEND_URL}${settings.logo_pfad}` : null;
+  const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+  const logoUrl = settings?.logo_pfad ? `${API_BASE_URL}${settings.logo_pfad.replace('/app/static', '/static')}` : null;
 
   const performSearch = useCallback(async (q: string) => {
     if (q.length < 2) {
