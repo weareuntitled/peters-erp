@@ -1,6 +1,6 @@
 services:
   backend:
-    image: ghcr.io/weareuntitled/peters-erp/backend:latest
+    image: ghcr.io/weareuntitled/peters-erp/backend:${BACKEND_TAG:-latest}
     container_name: peters-erp-prod-backend
     ports:
       - "8000:8000"
@@ -8,6 +8,12 @@ services:
       - /opt/peters-erp/data/production:/app/data
       - /opt/peters-erp/static:/app/static
     env_file: /opt/peters-erp/.env.production
+    environment:
+      - DATABASE_URL=sqlite:////app/data/gswin_modern.db
+      - CORS_ORIGINS=https://peters-erp.com,https://www.peters-erp.com
+      - LOG_LEVEL=info
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - REFRESH_TOKEN_EXPIRE_DAYS=7
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
@@ -17,7 +23,7 @@ services:
       start_period: 10s
 
   frontend:
-    image: ghcr.io/weareuntitled/peters-erp/frontend:latest
+    image: ghcr.io/weareuntitled/peters-erp/frontend:${FRONTEND_TAG:-latest}
     container_name: peters-erp-prod-frontend
     ports:
       - "5173:80"
