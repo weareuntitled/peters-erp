@@ -13,12 +13,13 @@ jobs:
     with:
       backend_tag: ghcr.io/weareuntitled/peters-erp/backend:staging-${{ github.sha }}
       frontend_tag: ghcr.io/weareuntitled/peters-erp/frontend:staging-${{ github.sha }}
+      frontend_vite_api_url: http://187.77.68.83:8001
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
     environment: staging
-    
+
     steps:
       - uses: actions/checkout@v4
 
@@ -34,22 +35,22 @@ jobs:
             set -e
             export TAG="staging-${{ github.sha }}"
             echo "Deploying staging with tag: $TAG"
-            
+
             # Login to GHCR for pulling private images
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-            
+
             # Pull latest repo first
             cd /opt/peters-erp/repo
             git fetch origin main
             git reset --hard origin/main
-            
+
             # Copy fresh scripts to /opt/peters-erp/scripts
             cp scripts/*.sh /opt/peters-erp/scripts/
             chmod +x /opt/peters-erp/scripts/*.sh
-            
+
             # Run staging deployment
             /opt/peters-erp/scripts/deploy-staging.sh "$TAG"
-            
+
             echo "Staging deployment complete!"
 
       - name: Check SMTP configured
@@ -74,15 +75,15 @@ jobs:
           password: ${{ secrets.SMTP_PASSWORD }}
           to: djdanep@gmail.com
           from: GitHub Actions <noreply@peters-erp.com>
-          subject: "${{ job.status == 'success' && '✅' || '❌' }} Staging Deployed - Peters ERP"
+          subject: "${{ job.status == 'success' && 'Staging Deployed - Peters ERP' || 'Staging Failed - Peters ERP' }}"
           body: |
             Staging deployment status: ${{ job.status }}
-            
+
             Commit: ${{ github.sha }}
             Author: ${{ github.actor }}
             Message: ${{ github.event.head_commit.message }}
-            
-            Access: https://staging.peters-erp.com
+
+            Access: http://187.77.68.83:5175
 
       - name: Health Check
         if: success()
@@ -90,4 +91,4 @@ jobs:
         run: |
           echo "Waiting for staging to be ready..."
           sleep 15
-          curl -f https://staging.peters-erp.com/api/health || echo "Health check warning - service may still be starting"
+          curl -f http://187.77.68.83:8001/api/health || echo "Health check warning - service may still be starting"

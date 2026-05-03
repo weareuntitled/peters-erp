@@ -22,11 +22,11 @@ jobs:
         run: |
           echo "Confirmation failed. You must type 'deploy-to-production' to proceed."
           exit 1
-      
+
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.git_ref }}
-      
+
       - name: Verify ref exists
         run: |
           git log --oneline -1
@@ -41,6 +41,7 @@ jobs:
     with:
       backend_tag: ghcr.io/weareuntitled/peters-erp/backend:production-${{ github.event.inputs.git_ref }}-${{ github.run_number }}
       frontend_tag: ghcr.io/weareuntitled/peters-erp/frontend:production-${{ github.event.inputs.git_ref }}-${{ github.run_number }}
+      frontend_vite_api_url: https://peters-erp.com/api
 
   backup:
     runs-on: ubuntu-latest
@@ -56,7 +57,7 @@ jobs:
             set -e
             BACKUP_DIR="/opt/peters-erp/data/production/backups"
             mkdir -p "$BACKUP_DIR"
-            
+
             # Backup with timestamp (only if DB exists)
             if [ -f /opt/peters-erp/data/production/gswin_modern.db ]; then
               BACKUP_FILE="gswin_modern.db.backup-$(date +%Y%m%d-%H%M%S).sqlite"
@@ -65,7 +66,7 @@ jobs:
             else
               echo "No database found to backup (fresh install)"
             fi
-            
+
             # Keep only last 10 backups
             ls -t "$BACKUP_DIR"/gswin_modern.db.backup-*.sqlite 2>/dev/null | tail -n +11 | xargs rm -f 2>/dev/null || true
 
@@ -73,7 +74,7 @@ jobs:
     needs: [validate, build, backup]
     runs-on: ubuntu-latest
     environment: production
-    
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -90,22 +91,22 @@ jobs:
             set -e
             export TAG="production-${{ github.event.inputs.git_ref }}-${{ github.run_number }}"
             echo "Deploying production with tag: $TAG"
-            
+
             # Login to GHCR for pulling private images
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-            
+
             # Pull latest repo first
             cd /opt/peters-erp/repo
             git fetch origin main
             git reset --hard origin/main
-            
+
             # Copy fresh scripts
             cp scripts/*.sh /opt/peters-erp/scripts/
             chmod +x /opt/peters-erp/scripts/*.sh
-            
+
             # Run production deployment
             /opt/peters-erp/scripts/deploy-production.sh "$TAG"
-            
+
             echo "Production deployment complete!"
 
       - name: Health Check
@@ -138,13 +139,13 @@ jobs:
           password: ${{ secrets.SMTP_PASSWORD }}
           to: djdanep@gmail.com
           from: GitHub Actions <noreply@peters-erp.com>
-          subject: "${{ job.status == 'success' && '🚀' || '❌' }} Production Deployed - Peters ERP"
+          subject: "${{ job.status == 'success' && 'Production Deployed - Peters ERP' || 'Production Failed - Peters ERP' }}"
           body: |
             Production deployment status: ${{ job.status }}
-            
+
             Git Ref: ${{ github.event.inputs.git_ref }}
             Commit: ${{ github.sha }}
             Deployed by: ${{ github.actor }}
             Run number: ${{ github.run_number }}
-            
+
             Access: https://peters-erp.com

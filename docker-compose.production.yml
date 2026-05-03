@@ -5,16 +5,9 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      # Mount data directory for SQLite persistence
-      - ../data/production:/app/data
-      # Mount static files (logos, uploads)
-      - ../static:/app/static
-    environment:
-      - DATABASE_URL=sqlite:////app/data/gswin_modern.db
-      - API_URL=https://peters-erp.com/api
-      - SECRET_KEY=${SECRET_KEY}
-      - LOG_LEVEL=info
-      - CORS_ORIGINS=https://peters-erp.com,https://www.peters-erp.com
+      - /opt/peters-erp/data/production:/app/data
+      - /opt/peters-erp/static:/app/static
+    env_file: /opt/peters-erp/.env.production
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
@@ -28,8 +21,6 @@ services:
     container_name: peters-erp-prod-frontend
     ports:
       - "5173:80"
-    environment:
-      - VITE_API_URL=https://peters-erp.com/api
     restart: unless-stopped
     depends_on:
       backend:
