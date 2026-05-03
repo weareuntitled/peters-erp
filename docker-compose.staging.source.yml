@@ -1,0 +1,45 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: peters-erp-backend:latest
+    container_name: peters-erp-staging-backend
+    ports:
+      - "8001:8000"
+    volumes:
+      - /opt/peters-erp/data/staging:/app/data
+      - /opt/peters-erp/static:/app/static
+    env_file: /opt/peters-erp/.env.staging
+    environment:
+      - DATABASE_URL=sqlite:////app/data/gswin_modern.db
+      - CORS_ORIGINS=https://peters-erp.com,https://www.peters-erp.com,https://staging.peters-erp.com,http://peters-erp.com,http://www.peters-erp.com,http://localhost:5173,http://localhost:5174,http://187.77.68.83:5175
+      - LOG_LEVEL=debug
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - REFRESH_TOKEN_EXPIRE_DAYS=7
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=/api
+    image: peters-erp-frontend:direct
+    container_name: peters-erp-staging-frontend
+    ports:
+      - "5175:80"
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+
+networks:
+  default:
+    name: peters-erp-staging
