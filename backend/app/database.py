@@ -1,4 +1,4 @@
-from sqlmodel import create_engine, SQLModel, Session
+from sqlmodel import create_engine, SQLModel, Session, select
 from typing import Generator
 import os
 import secrets
