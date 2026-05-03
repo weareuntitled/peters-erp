@@ -9,6 +9,7 @@ services:
       - ../data/staging:/app/data
       # Mount static files (logos, uploads)
       - ../static:/app/static
+    env_file: /opt/peters-erp/.env.staging
     environment:
       - DATABASE_URL=sqlite:////app/data/gswin_modern.db
       - API_URL=https://staging.peters-erp.com/api
