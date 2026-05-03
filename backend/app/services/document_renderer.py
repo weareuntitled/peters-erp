@@ -54,6 +54,55 @@ class DocumentRenderer:
         return self._render_context(context, session)
 
     # --- Internal Context Assembly ---
+
+    @staticmethod
+    def _is_within_base(path: str, base: str) -> bool:
+        try:
+            return os.path.commonpath([path, base]) == base
+        except ValueError:
+            return False
+
+    def _resolve_logo_path(self, logo_pfad: str) -> Optional[str]:
+        raw = (logo_pfad or "").strip()
+        if not raw:
+            return None
+
+        candidates = []
+        if os.path.isabs(raw):
+            candidates.append(raw)
+        else:
+            candidates.append(os.path.join(os.getcwd(), raw))
+
+        rel = raw.lstrip("/")
+        candidates.extend([
+            os.path.join("/app", rel),
+            os.path.join("/app/app", rel),
+            os.path.join(os.getcwd(), rel),
+            os.path.join(os.getcwd(), "app", rel),
+        ])
+
+        if raw.startswith("/static/"):
+            static_rel = raw[len("/static/"):]
+            candidates.extend([
+                os.path.join("/app/static", static_rel),
+                os.path.join("/app/app/static", static_rel),
+            ])
+
+        allowed_bases = [
+            os.path.realpath("/app/static"),
+            os.path.realpath("/app/app/static"),
+            os.path.realpath(os.path.join(os.getcwd(), "app", "static")),
+            os.path.realpath(os.path.join(os.getcwd(), "static")),
+        ]
+
+        for candidate in candidates:
+            resolved = os.path.realpath(candidate)
+            if not os.path.exists(resolved):
+                continue
+            if any(self._is_within_base(resolved, base) for base in allowed_bases):
+                return resolved
+
+        return None
     
     def _get_company_info(self, session: Session) -> dict:
         settings = session.exec(select(FirmenEinstellungen).limit(1)).first()
@@ -62,12 +111,9 @@ class DocumentRenderer:
             
         logo_base64 = None
         if settings.logo_pfad:
-            # Security: prevent path traversal by resolving to absolute path and checking it's within allowed directories
-            allowed_dirs = ['/app/app/static', '/app/static', os.getcwd()]
-            logo_path = os.path.abspath(settings.logo_pfad)
-            is_allowed = any(logo_path.startswith(os.path.abspath(d)) for d in allowed_dirs)
-            
-            if is_allowed and os.path.exists(logo_path):
+            logo_path = self._resolve_logo_path(settings.logo_pfad)
+
+            if logo_path and os.path.exists(logo_path):
                 import base64
                 try:
                     with open(logo_path, "rb") as image_file:
