@@ -12,7 +12,7 @@ router = APIRouter(tags=["Firmen-Einstellungen"])
 UPLOAD_DIR = Path("app/static/logos")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
-ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".svg"}
+ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".svg", ".gif", ".bmp", ".tif", ".tiff", ".avif", ".ico"}
 MAX_FILE_SIZE = 2 * 1024 * 1024  # 2MB
 
 @router.get("/", response_model=FirmenEinstellungenRead)

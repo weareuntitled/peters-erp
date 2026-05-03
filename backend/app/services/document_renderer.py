@@ -1,4 +1,5 @@
 ﻿import os
+import mimetypes
 import re
 from pathlib import Path
 from typing import Optional, Dict, Any, List
@@ -72,8 +73,11 @@ class DocumentRenderer:
                     with open(logo_path, "rb") as image_file:
                         encoded_string = base64.b64encode(image_file.read()).decode()
                         ext = os.path.splitext(logo_path)[1].lower().replace('.', '')
-                        mime_map = {'png': 'image/png', 'jpeg': 'image/jpeg', 'jpg': 'image/jpeg', 'gif': 'image/gif', 'svg': 'image/svg+xml'}
-                        mime_type = mime_map.get(ext, 'image/png')
+                        mime_type, _ = mimetypes.guess_type(logo_path)
+                        if ext in {'svg', 'svgz'}:
+                            mime_type = 'image/svg+xml'
+                        if not mime_type:
+                            mime_type = 'application/octet-stream'
                         logo_base64 = f"data:{mime_type};base64,{encoded_string}"
                 except Exception:
                     pass
