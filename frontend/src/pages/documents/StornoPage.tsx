@@ -38,7 +38,7 @@ const StornoPage = () => {
         ...buildApiParams(),
       };
       if (search) params.dokument_nr = search;
-      const res = await apiClient.get('/dokumente', { params });
+      const res = await apiClient.get('/dokumente/', { params });
       return res.data;
     },
   });

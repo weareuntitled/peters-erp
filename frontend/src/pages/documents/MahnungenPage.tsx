@@ -37,7 +37,7 @@ const MahnungenPage = () => {
     queryFn: async () => {
       const params: Record<string, string | number> = { skip: (page - 1) * limit, limit, typ: 'MA' };
       if (search) params.dokument_nr = search;
-      const res = await apiClient.get('/dokumente', { params });
+      const res = await apiClient.get('/dokumente/', { params });
       return res.data;
     },
   });

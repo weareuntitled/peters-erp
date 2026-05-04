@@ -56,7 +56,7 @@ const RechnungDetailPage = () => {
   const { data: positionen, isLoading: isPosLoading } = useQuery({
     queryKey: ['positionen', id],
     queryFn: async () => {
-      const res = await apiClient.get('/positionen', { params: { dokument_id: id } });
+      const res = await apiClient.get('/positionen/', { params: { dokument_id: id } });
       return res.data;
     },
   });

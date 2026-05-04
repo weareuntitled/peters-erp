@@ -35,7 +35,7 @@ const RechnungenPage = () => {
       };
       if (search) params.dokument_nr = search;
       params.typ = 'RE';
-      const res = await apiClient.get('/dokumente', { params });
+      const res = await apiClient.get('/dokumente/', { params });
       return res.data;
     },
   });

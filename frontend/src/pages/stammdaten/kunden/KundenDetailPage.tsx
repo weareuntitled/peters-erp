@@ -19,7 +19,7 @@ const KundenDetailPage = () => {
   const { data: rechnungen } = useQuery({
     queryKey: ['kunde-rechnungen', id],
     queryFn: async () => {
-      const res = await apiClient.get('/dokumente', { params: { kunde_id: id, typ: 'RE' } });
+      const res = await apiClient.get('/dokumente/', { params: { kunde_id: id, typ: 'RE' } });
       return res.data.items || [];
     },
     enabled: !!id,
@@ -28,7 +28,7 @@ const KundenDetailPage = () => {
   const { data: angebote } = useQuery({
     queryKey: ['kunde-angebote', id],
     queryFn: async () => {
-      const res = await apiClient.get('/dokumente', { params: { kunde_id: id, typ: 'AN' } });
+      const res = await apiClient.get('/dokumente/', { params: { kunde_id: id, typ: 'AN' } });
       return res.data.items || [];
     },
     enabled: !!id,
