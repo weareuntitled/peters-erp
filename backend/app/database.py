@@ -41,6 +41,17 @@ def init_db():
             conn.exec_driver_sql("PRAGMA journal_mode=WAL")
             conn.exec_driver_sql("PRAGMA synchronous=NORMAL")
             conn.exec_driver_sql("PRAGMA cache_size=-64000")
+            # Performance indexes for dominant query paths
+            conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS idx_dokumente_typ_datum ON dokumente (typ, datum DESC)")
+            conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS idx_dokumente_kunde_id ON dokumente (kunde_id)")
+            conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS idx_dokumente_dokument_nr ON dokumente (dokument_nr)")
+            conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS idx_positionen_dokument_id ON positionen (dokument_id)")
+            conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS idx_positionen_warengruppe_id ON positionen (warengruppe_id)")
+            conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS idx_zahlungen_dokument_id ON zahlungen (dokument_id)")
+            conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS idx_kunden_name ON kunden (name)")
+            conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS idx_kunden_kundnr ON kunden (kundnr)")
+            conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS idx_warengruppen_bezeichnung ON warengruppen (bezeichnung)")
+            conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS idx_vorlagen_typ_aktiv ON vorlagen (typ, aktiv, ist_standard)")
     
     print("Database initialized successfully")
 

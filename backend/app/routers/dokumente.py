@@ -4,7 +4,7 @@ from ..services.email_service import email_service
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.responses import HTMLResponse, Response
 from pydantic import BaseModel
-from sqlmodel import Session, select, and_
+from sqlmodel import Session, select, and_, func
 from typing import List, Optional
 from ..database import get_session
 from ..models import Dokument, DokumentCreate, DokumentRead, DokumentUpdate, Kunde
@@ -81,10 +81,10 @@ async def read_dokumente(
         result_items.append(DokumentRead(**doc_dict))
     
     # Get total count
-    count_statement = select(Dokument)
+    count_statement = select(func.count(Dokument.id))
     if filters:
         count_statement = count_statement.where(and_(*filters))
-    total_count = session.exec(count_statement).all().__len__()
+    total_count = int(session.exec(count_statement).one() or 0)
 
     page = (pagination.skip // pagination.limit) + 1 if pagination.limit > 0 else 1
     pages = (total_count + pagination.limit - 1) // pagination.limit if pagination.limit > 0 else 1

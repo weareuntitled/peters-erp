@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import HTMLResponse
-from sqlmodel import Session, select, and_
+from sqlmodel import Session, select, and_, func
 from typing import List, Optional
 from pydantic import BaseModel
 from ..database import get_session
@@ -65,10 +65,10 @@ async def read_vorlagen(
 
     vorlagen = session.exec(statement).all()
 
-    count_statement = select(Vorlage)
+    count_statement = select(func.count(Vorlage.id))
     if filters:
         count_statement = count_statement.where(and_(*filters))
-    total_count = session.exec(count_statement).all().__len__()
+    total_count = int(session.exec(count_statement).one() or 0)
 
     page = (pagination.skip // pagination.limit) + 1 if pagination.limit > 0 else 1
     pages = (total_count + pagination.limit - 1) // pagination.limit if pagination.limit > 0 else 1

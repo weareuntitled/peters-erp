@@ -54,10 +54,10 @@ async def read_kunden(
 
     kunden = session.exec(statement).all()
 
-    count_statement = select(Kunde)
+    count_statement = select(func.count(Kunde.id))
     if filters:
         count_statement = count_statement.where(and_(*filters))
-    total_count = session.exec(count_statement).all().__len__()
+    total_count = int(session.exec(count_statement).one() or 0)
 
     page = (pagination.skip // pagination.limit) + 1 if pagination.limit > 0 else 1
     pages = (total_count + pagination.limit - 1) // pagination.limit if pagination.limit > 0 else 1
