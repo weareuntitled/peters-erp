@@ -3,6 +3,8 @@
 from datetime import datetime
 from typing import Optional
 
+from .date_correction import correct_date_string
+
 
 def format_currency(amount: Optional[float]) -> str:
     """Format amount as German currency: 1.234,56 EUR"""
@@ -22,6 +24,7 @@ def format_date(dt: Optional[datetime]) -> str:
     if dt is None:
         return ""
     if isinstance(dt, str):
+        dt = correct_date_string(dt)
         if "." in dt and "-" not in dt[:10]:
             dt = datetime.strptime(dt[:10], "%d.%m.%Y")
         else:

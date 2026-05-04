@@ -11,6 +11,7 @@ except (ImportError, OSError):
 
 from sqlmodel import Session, select
 from .formatting import format_currency, format_mwst_rate, format_date, format_document_number, get_document_title
+from .date_correction import correct_date_string, correct_document_number
 
 from ..models.dokumente import Dokument
 from ..models.kunden import Kunde
@@ -233,9 +234,9 @@ class DocumentRenderer:
             "document": {
                 "id": dokument.id,
                 "typ": dokument.typ,
-                "dokument_nr": dokument.dokument_nr,
-                "datum": dokument.datum,
-                "liefertermin": dokument.liefertermin,
+                "dokument_nr": correct_document_number(dokument.dokument_nr),
+                "datum": correct_date_string(dokument.datum),
+                "liefertermin": correct_date_string(dokument.liefertermin),
                 "betrag_netto": float(dokument.betrag_netto or 0),
                 "betrag_brutto": float(dokument.betrag_brutto or 0),
                 "kopftext": dokument.kopftext or (vorlage.kopftext if vorlage else None),
@@ -251,9 +252,9 @@ class DocumentRenderer:
             "company": self._get_company_info(session),
             "meta": {
                 "title": get_document_title(dokument.typ or "RE"),
-                "number": dokument.dokument_nr or format_document_number(dokument.typ or "RE", dokument.id),
-                "datum_formatted": format_date(dokument.datum),
-                "liefertermin_formatted": format_date(dokument.liefertermin) if dokument.liefertermin else None,
+                "number": correct_document_number(dokument.dokument_nr) or format_document_number(dokument.typ or "RE", dokument.id),
+                "datum_formatted": format_date(correct_date_string(dokument.datum)),
+                "liefertermin_formatted": format_date(correct_date_string(dokument.liefertermin)) if dokument.liefertermin else None,
                 "typ": dokument.typ,
             }
         }

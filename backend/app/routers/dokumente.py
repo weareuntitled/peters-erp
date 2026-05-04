@@ -10,6 +10,7 @@ from ..database import get_session
 from ..models import Dokument, DokumentCreate, DokumentRead, DokumentUpdate, Kunde
 from ..models.responses import PaginatedResponse
 from ..models.query_params import PaginationParams, SortParams
+from ..services.date_correction import correct_document_dict
 
 router = APIRouter()
 
@@ -72,7 +73,7 @@ async def read_dokumente(
     # Enrich with kunde_name and correct dates
     result_items = []
     for doc in dokumente:
-        doc_dict = doc.model_dump()
+        doc_dict = correct_document_dict(doc.model_dump())
         kunde = session.get(Kunde, doc.kunde_id)
         if kunde:
             parts = [p for p in [kunde.vorname, kunde.name] if p]
@@ -96,7 +97,7 @@ async def read_dokument(dokument_id: int, session: Session = Depends(get_session
     if not dokument:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dokument not found")
         
-    doc_dict = dokument.model_dump()
+    doc_dict = correct_document_dict(dokument.model_dump())
     kunde = session.get(Kunde, dokument.kunde_id)
     if kunde:
         parts = [p for p in [kunde.vorname, kunde.name] if p]
@@ -106,7 +107,7 @@ async def read_dokument(dokument_id: int, session: Session = Depends(get_session
 @router.post("/", response_model=DokumentRead)
 async def create_dokument(dokument: DokumentCreate, session: Session = Depends(get_session)):
     db_dokument = document_service.create_document(dokument, session)
-    doc_dict = db_dokument.model_dump()
+    doc_dict = correct_document_dict(db_dokument.model_dump())
     
     # Fill in kunde_name for response
     if db_dokument.kunde_id:
@@ -261,7 +262,7 @@ async def convert_dokument(dokument_id: int, new_typ: str, session: Session = De
         session.add(source)
         session.commit()
     
-    doc_dict = new_doc.model_dump()
+    doc_dict = correct_document_dict(new_doc.model_dump())
     kunde = session.get(Kunde, new_doc.kunde_id)
     if kunde:
         parts = [p for p in [kunde.vorname, kunde.name] if p]
@@ -283,7 +284,7 @@ async def update_dokument(dokument_id: int, dokument: DokumentUpdate, session: S
     session.commit()
     session.refresh(db_dokument)
     
-    doc_dict = db_dokument.model_dump()
+    doc_dict = correct_document_dict(db_dokument.model_dump())
     kunde = session.get(Kunde, db_dokument.kunde_id)
     if kunde:
         parts = [p for p in [kunde.vorname, kunde.name] if p]
