@@ -28,7 +28,7 @@ services:
     pull_policy: never
     container_name: peters-erp-staging-frontend
     ports:
-      - "5175:80"
+      - "5175:5174"
     restart: unless-stopped
     depends_on:
       backend:
