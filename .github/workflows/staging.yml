@@ -13,7 +13,7 @@ jobs:
     with:
       backend_tag: ghcr.io/weareuntitled/peters-erp/backend:staging-${{ github.sha }}
       frontend_tag: ghcr.io/weareuntitled/peters-erp/frontend:staging-${{ github.sha }}
-      frontend_vite_api_url: http://187.77.68.83:8001/api
+      frontend_vite_api_url: https://staging.peters-erp.com/api
 
   deploy:
     needs: build
