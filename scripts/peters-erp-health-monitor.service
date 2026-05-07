@@ -1,0 +1,30 @@
+[Unit]
+Description=Peters ERP Health Monitor
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/peters-erp/scripts
+ExecStart=/opt/peters-erp/scripts/health-monitor.sh
+Restart=always
+RestartSec=10
+
+# Environment variables (or use config file)
+Environment=BACKEND_URL=http://localhost:8001/api/health
+Environment=FRONTEND_URL=http://localhost:5175/
+Environment=CHECK_INTERVAL=30
+Environment=RESTART_COOLDOWN=300
+Environment=MAX_RETRIES=3
+
+# Optional: Telegram notifications (set via environment or config file)
+# Environment=TELEGRAM_BOT_TOKEN=your_bot_token
+# Environment=TELEGRAM_CHAT_ID=your_chat_id
+
+# Logging
+StandardOutput=append:/var/log/peters-erp/health-monitor.log
+StandardError=append:/var/log/peters-erp/health-monitor.log
+
+[Install]
+WantedBy=multi-user.target

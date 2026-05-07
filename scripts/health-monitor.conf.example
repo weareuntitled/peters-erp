@@ -1,0 +1,18 @@
+# Peters ERP Health Monitor Configuration
+# Copy this to health-monitor.conf and customize
+
+# Service URLs
+BACKEND_URL=http://localhost:8001/api/health
+FRONTEND_URL=http://localhost:5175/
+
+# Check settings (in seconds)
+CHECK_INTERVAL=30
+RESTART_COOLDOWN=300
+MAX_RETRIES=3
+
+# Logging
+LOG_FILE=/var/log/peters-erp/health-monitor.log
+
+# Telegram notifications (get from @BotFather on Telegram)
+TELEGRAM_BOT_TOKEN=your_bot_token_here
+TELEGRAM_CHAT_ID=your_chat_id_here
