@@ -17,11 +17,9 @@ LOG_FILE=/var/log/peters-erp/health-monitor.log
 EMAIL_TO=djdanep@gmail.com
 EMAIL_REPORT_INTERVAL=86400
 
-# SMTP Configuration (for Gmail use app password)
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASS=your-app-password
+# SMTP Configuration (via msmtp)
+# Credentials stored in: /opt/peters-erp/scripts/msmtprc
+# (App password at https://myaccount.google.com/apppasswords)
 
 # Telegram notifications (get from @BotFather on Telegram)
 TELEGRAM_BOT_TOKEN=your_bot_token_here

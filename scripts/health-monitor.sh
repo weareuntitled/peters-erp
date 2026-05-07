@@ -59,7 +59,7 @@ send_telegram() {
 }
 
 send_email() {
-    if [ -z "$EMAIL_TO" ] || [ -z "$SMTP_USER" ] || [ -z "$SMTP_PASS" ]; then
+    if [ -z "$EMAIL_TO" ]; then
         return
     fi
 
@@ -67,17 +67,11 @@ send_email() {
     local body="$2"
 
     {
-        echo "From: $SMTP_USER"
         echo "To: $EMAIL_TO"
         echo "Subject: $subject"
-        echo "Content-Type: text/plain; charset=UTF-8"
         echo ""
         echo "$body"
-    } | curl -s --url "smtp://${SMTP_HOST}:${SMTP_PORT}" \
-        --mail-from "$SMTP_USER" \
-        --mail-rcpt "$EMAIL_TO" \
-        --user "${SMTP_USER}:${SMTP_PASS}" \
-        --upload-file - > /dev/null 2>&1 || true
+    } | msmtp --file=/opt/peters-erp/scripts/msmtprc -t "$EMAIL_TO" > /dev/null 2>&1 || true
 }
 
 send_status_report() {
