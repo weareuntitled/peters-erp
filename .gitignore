@@ -51,6 +51,9 @@ Thumbs.db
 .env.staging
 .env.production
 
+# Server credentials (local only)
+SERVER_LOGINS.md
+
 # Frontend
 node_modules/
 dist/
