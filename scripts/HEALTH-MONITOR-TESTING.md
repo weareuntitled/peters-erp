@@ -18,6 +18,9 @@ This document describes how to test the health monitoring system for the Peters 
 | Container Crash Simulation | ✅ PASS | docker kill tested |
 | Auto-Restart | ✅ PASS | Recovered in ~10s |
 | Systemd Service | ✅ PASS | Enabled, running |
+| Email Configuration | ✅ PASS | msmtp installed & configured |
+| Email Sending (Simple) | ✅ PASS | Received at djdanep@gmail.com (18:40) |
+| Email with Server Logs | ✅ PASS | Formatted email with live data received |
 
 ### Live Test Log Excerpt
 ```
@@ -27,362 +30,146 @@ This document describes how to test the health monitoring system for the Peters 
 [2026-05-07 16:01:34] Frontend is UP after restart
 ```
 
+### Email Test Results
+```
+Simple Test: djdanep@gmail.com - Received 18:40
+Content: "This is a simple test email..."
+Server: 187.77.68.83
+```
+
 ### Verified On Server
 - SSH: root@187.77.68.83
 - Service: peters-erp-health-monitor.service (active)
 - Log: /var/log/peters-erp/health-monitor.log
+- msmtp config: /opt/peters-erp/scripts/msmtprc
 - Both services: http://187.77.68.83:5175/ (frontend), http://187.77.68.83:8001/api/health (backend)
 
 ---
 
-## Test Environment Setup
+## Email Testing
 
 ### Prerequisites
 ```bash
-# SSH into staging server
+# On staging server
 ssh root@187.77.68.83
 
-# Navigate to scripts directory
-cd /opt/peters-erp/scripts
+# Verify msmtp is installed
+which msmtp
 
-# Make health monitor executable
-chmod +x health-monitor.sh
+# Check config exists
+cat /opt/peters-erp/scripts/msmtprc
+
+# Verify Gmail app password is set
+grep "password" /opt/peters-erp/scripts/msmtprc
 ```
 
-### Create test config
+### Test 1: Simple Email Send
 ```bash
-# Copy example config
-cp health-monitor.conf.example health-monitor.conf
+# Create test email
+cat > /tmp/email-test.txt << 'EOF'
+To: djdanep@gmail.com
+Subject: Test Email - Simple
 
-# Edit with your Telegram credentials (optional for testing)
-nano health-monitor.conf
+This is a simple test email from the server.
+Time: $(date)
+Server: 187.77.68.83
+EOF
+
+# Send using msmtp
+msmtp --file=/opt/peters-erp/scripts/msmtprc -t djdanep@gmail.com < /tmp/email-test.txt
+
+# Check inbox - should arrive within 1-2 minutes
 ```
 
----
+**Expected:** Email arrives at djdanep@gmail.com with subject "Test Email - Simple"
 
-## Test Suite
-
-### 🟢 Test 1: Basic Service Connectivity
-
-**Purpose:** Verify all services are reachable before testing the monitor.
-
-**Steps:**
+### Test 2: Formatted Email with Server Status
 ```bash
-# Test backend health
-curl -s http://localhost:8001/api/health
-# Expected: {"status":"healthy","service":"peters-erp-backend","version":"1.0.0"}
+# Run the formatted email script
+/opt/peters-erp/scripts/send-live-report-v2.sh
 
-# Test frontend
-curl -s -o /dev/null -w "%{http_code}" http://localhost:5175/
-# Expected: 200 or 301
-
-# Test from external IP
-curl -s http://187.77.68.83:8001/api/health
-curl -s -o /dev/null -w "%{http_code}" http://187.77.68:83:5175/
+# Check inbox - should have formatted email with:
+# - Server IP (187.77.68.83)
+# - Timestamp
+# - Service status (HTTP codes)
+# - Container status
+# - Recent logs (last 15 lines)
 ```
 
-**Success Criteria:** Both services return HTTP 2xx
+**Expected:** Formatted email with live server data received
 
----
-
-### 🟢 Test 2: Health Monitor Script Syntax
-
-**Purpose:** Verify the script has no syntax errors.
-
-**Steps:**
+### Test 3: Auto-Recovery Email Alert
 ```bash
-# Run shellcheck (if installed)
-bash -n health-monitor.sh
-# Expected: No output = success
-
-# Check for common issues
-grep -n 'set -e' health-monitor.sh
-grep -n 'set -u' health-monitor.sh
-```
-
-**Success Criteria:** No syntax errors, all safety flags present
-
----
-
-### 🟢 Test 3: Manual Service Check Function
-
-**Purpose:** Test the check_service function directly.
-
-**Steps:**
-```bash
-# Test with working service
-export BACKEND_URL="http://localhost:8001/api/health"
-bash -c '
-source health-monitor.sh
-check_service "Backend" "$BACKEND_URL" "peters-erp-staging-backend"
-echo "Exit code: $?"
-'
-# Expected: Exit code 0 (success)
-
-# Test with non-existent service (mock)
-bash -c '
-check_service "Fake" "http://localhost:9999/nothing" "fake-container"
-echo "Exit code: $?"
-'
-# Expected: Exit code 1 (failure)
-```
-
-**Success Criteria:** Function returns 0 for UP, 1 for DOWN
-
----
-
-### 🟢 Test 4: Container Restart Function
-
-**Purpose:** Test the restart_container function.
-
-**Steps:**
-```bash
-# Check current container status
-docker ps --filter "name=peters-erp-staging" --format "table {{.Names}}\t{{.Status}}"
-
-# Test restart (safe - just restarts, does not remove)
-docker restart peters-erp-staging-backend
-
-# Wait and check health
-sleep 5
-curl -s http://localhost:8001/api/health
-```
-
-**Success Criteria:** Container restarts successfully, health returns
-
----
-
-### 🟢 Test 5: Simulate Frontend Failure & Auto-Recovery
-
-**Purpose:** Test the full detection + restart cycle.
-
-**Steps:**
-```bash
-# Start health monitor in background
-cd /opt/peters-erp/scripts
-./health-monitor.sh &
-MONITOR_PID=$!
-echo "Monitor PID: $MONITOR_PID"
-
-# Kill the frontend container (simulate crash)
-docker kill peters-erp-staging-frontend
-echo "Frontend killed - waiting for monitor to detect..."
-
-# Wait for detection + restart (max 60 seconds)
-sleep 60
-
-# Check if frontend is back
-curl -s -o /dev/null -w "%{http_code}" http://localhost:5175/
-# Expected: 200
-
-# Check logs
-tail -20 /var/log/peters-erp/health-monitor.log
-
-# Stop monitor
-kill $MONITOR_PID
-```
-
-**Success Criteria:**
-- Monitor detects failure within 30 seconds
-- Container restarts automatically
-- Frontend returns to healthy state
-- Log shows detection and recovery
-
----
-
-### 🟢 Test 6: Restart Cooldown Prevention
-
-**Purpose:** Verify the monitor doesn't restart too frequently.
-
-**Steps:**
-```bash
-# Set short cooldown for testing (modify in script temporarily)
-# Or check the cooldown logic:
-
-# Create cooldown file manually
-echo $(date +%s) > /tmp/health-monitor-last-restart-Frontend
-
-# Check monitor behavior - should skip restart due to cooldown
-# (Check logs for "cooldown active" message)
-```
-
-**Success Criteria:** Monitor respects cooldown and logs appropriately
-
----
-
-### 🟢 Test 7: Telegram Notification (Mock Test)
-
-**Purpose:** Verify notification function works.
-
-**Steps:**
-```bash
-# Without valid credentials - should silently fail
-source health-monitor.sh
-send_telegram "Test message - should silently fail"
-
-# With valid credentials (set in config):
-# TELEGRAM_BOT_TOKEN=xxx TELEGRAM_CHAT_ID=yyy bash -c '
-# source health-monitor.sh
-# send_telegram "🧪 Test from health monitor"
-# '
-
-# Check /var/log/peters-erp/health-monitor.log for errors
-```
-
-**Success Criteria:** No errors in logs (silent failure without credentials is OK)
-
----
-
-### 🟢 Test 8: Multiple Consecutive Failures Alert
-
-**Purpose:** Verify critical alert triggers after MAX_RETRIES.
-
-**Steps:**
-```bash
-# This is a destructive test - run on staging only
-# Modify MAX_RETRIES to 2 in health-monitor.sh for quick test:
-sed -i 's/MAX_RETRIES=3/MAX_RETRIES=2/' health-monitor.sh
-
-# Start monitor
-./health-monitor.sh &
-MONITOR_PID=$!
-
-# Kill both containers
-docker kill peters-erp-staging-frontend peters-erp-staging-backend
-
-# Wait for 2 consecutive failures (about 60-90 seconds)
-sleep 90
-
-# Check logs for critical alert
-grep -i "critical\|multiple" /var/log/peters-erp/health-monitor.log
-
-# Restore MAX_RETRIES
-sed -i 's/MAX_RETRIES=2/MAX_RETRIES=3/' health-monitor.sh
-
-# Restart containers manually
-docker restart peters-erp-staging-frontend peters-erp-staging-backend
-kill $MONITOR_PID
-```
-
-**Success Criteria:** Critical alert logged after max failures
-
----
-
-### 🟢 Test 9: Systemd Service Installation
-
-**Purpose:** Verify systemd service can be installed and started.
-
-**Steps:**
-```bash
-# Copy service file
-cp /opt/peters-erp/scripts/peters-erp-health-monitor.service /etc/systemd/system/
-
-# Reload systemd
-systemctl daemon-reload
-
-# Enable service (so it starts on boot)
-systemctl enable peters-erp-health-monitor.service
-
-# Start service
+# Start monitoring if not running
 systemctl start peters-erp-health-monitor.service
 
-# Check status
-systemctl status peters-erp-health-monitor.service --no-pager
+# Kill frontend container to trigger auto-restart
+docker kill peters-erp-staging-frontend
 
-# Check it's running
-systemctl is-active peters-erp-health-monitor.service
-# Expected: active
+# Wait 40-60 seconds for:
+# 1. Monitor to detect failure
+# 2. Container to restart
+# 3. Recovery email to be sent
 
-# Check logs via journal
-journalctl -u peters-erp-health-monitor.service --no-pager -n 20
+# Check inbox for:
+# Subject: "Peters ERP - Peters ERP Auto-Recovery"
+# or: "Peters ERP - Peters ERP Recovered"
 ```
 
-**Success Criteria:** Service runs without errors, status shows "active"
+**Expected:** Recovery email sent to djdanep@gmail.com
 
----
-
-### 🟢 Test 10: Log Rotation
-
-**Purpose:** Verify logs don't grow unbounded.
-
-**Steps:**
+### Test 4: Daily Status Report
 ```bash
-# Check log file size
-ls -lh /var/log/peters-erp/health-monitor.log
+# Check current email report interval
+grep EMAIL_REPORT_INTERVAL /opt/peters-erp/scripts/health-monitor.conf
+# Default: 86400 (24 hours)
 
-# Generate some log entries (run monitor briefly)
-timeout 10 ./health-monitor.sh || true
+# To test immediately, change to 60 (1 minute)
+sed -i 's/EMAIL_REPORT_INTERVAL=.*/EMAIL_REPORT_INTERVAL=60/' /opt/peters-erp/scripts/health-monitor.conf
 
-# Check size after short run
-ls -lh /var/log/peters-erp/health-monitor.log
+# Restart service to pick up new interval
+systemctl restart peters-erp-health-monitor.service
 
-# For production: setup logrotate
-cat > /etc/logrotate.d/peters-erp-health-monitor << 'EOF'
-/var/log/peters-erp/health-monitor.log {
-    daily
-    rotate 7
-    compress
-    delaycompress
-    missingok
-    notifempty
-}
-EOF
+# Wait 2 minutes, then check inbox for daily report
+# Subject: "Peters ERP - Server Status Report & Logs"
+
+# Restore to daily (optional)
+sed -i 's/EMAIL_REPORT_INTERVAL=.*/EMAIL_REPORT_INTERVAL=86400/' /opt/peters-erp/scripts/health-monitor.conf
+systemctl restart peters-erp-health-monitor.service
 ```
 
-**Success Criteria:** Logrotate config created, logs manageable
+### Troubleshooting Email Issues
 
----
-
-## Automated Test Script
-
-Run all tests automatically:
-
+#### Email not arriving
 ```bash
-#!/bin/bash
-# test-health-monitor.sh
+# Check msmtp configuration
+msmtp --file=/opt/peters-erp/scripts/msmtprc -v djdanep@gmail.com < /dev/null
 
-set -e
+# Check for errors in output:
+# - "password: *" should show your app password
+# - "host = smtp.gmail.com" should be set
+# - "tls = on" should be enabled
 
-echo "========================================="
-echo "  Peters ERP Health Monitor Test Suite"
-echo "========================================="
+# Test SMTP connection manually
+timeout 10 telnet smtp.gmail.com 587
+# Expected: "Connected to smtp.gmail.com"
+```
 
-cd /opt/peters-erp/scripts
+#### Gmail App Password Issues
+1. Verify 2-Factor Authentication is enabled
+2. Generate new App Password: https://myaccount.google.com/apppasswords
+3. Name: "Peters ERP Health Monitor"
+4. Update `/opt/peters-erp/scripts/msmtprc` with new password
+5. Restart service: `systemctl restart peters-erp-health-monitor.service`
 
-# Test 1: Syntax check
-echo "Test 1: Syntax check..."
-bash -n health-monitor.sh || { echo "FAIL: Syntax error"; exit 1; }
-echo "PASS"
+#### Check Health Monitor Logs for Email Errors
+```bash
+# View recent logs
+tail -50 /var/log/peters-erp/health-monitor.log | grep -i "email\|send\|msmtp"
 
-# Test 2: Service connectivity
-echo "Test 2: Service connectivity..."
-curl -sf http://localhost:8001/api/health > /dev/null || { echo "FAIL: Backend down"; exit 1; }
-curl -sf http://localhost:5175/ > /dev/null || { echo "FAIL: Frontend down"; exit 1; }
-echo "PASS"
-
-# Test 3: Container status
-echo "Test 3: Container status..."
-docker ps --filter "name=peters-erp-staging" --format "{{.Names}}" | grep -q "peters-erp-staging-backend" || { echo "FAIL: Backend container missing"; exit 1; }
-docker ps --filter "name=peters-erp-staging" --format "{{.Names}}" | grep -q "peters-erp-staging-frontend" || { echo "FAIL: Frontend container missing"; exit 1; }
-echo "PASS"
-
-# Test 4: Systemd service (if installed)
-echo "Test 4: Systemd service..."
-if systemctl is-enabled peters-erp-health-monitor.service &>/dev/null; then
-    systemctl is-active peters-erp-health-monitor.service || { echo "FAIL: Service not active"; exit 1; }
-    echo "PASS (service active)"
-else
-    echo "SKIP (service not installed)"
-fi
-
-# Test 5: Log file exists
-echo "Test 5: Log file..."
-[ -f /var/log/peters-erp/health-monitor.log ] || { echo "FAIL: Log file missing"; exit 1; }
-echo "PASS"
-
-echo "========================================="
-echo "  All tests passed!"
-echo "========================================="
+# If "command not found" errors:
+# Verify msmtp is installed: which msmtp
+# If not: apt-get install -y msmtp msmtp-mta mailutils
 ```
 
 ---
