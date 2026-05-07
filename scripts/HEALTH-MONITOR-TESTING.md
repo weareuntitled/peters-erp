@@ -8,6 +8,31 @@ This document describes how to test the health monitoring system for the Peters 
 - Sends Telegram notifications on status changes
 - Prevents restart loops with a 5-minute cooldown
 
+## Test Results (Live Test - May 7, 2026)
+
+| Test | Result | Notes |
+|------|--------|-------|
+| Health Monitor Start | ✅ PASS | Started via systemd |
+| Backend Detection | ✅ PASS | HTTP 200 detected |
+| Frontend Detection | ✅ PASS | HTTP 200 detected |
+| Container Crash Simulation | ✅ PASS | docker kill tested |
+| Auto-Restart | ✅ PASS | Recovered in ~10s |
+| Systemd Service | ✅ PASS | Enabled, running |
+
+### Live Test Log Excerpt
+```
+[2026-05-07 16:01:23] Frontend is DOWN (HTTP 000000)
+[2026-05-07 16:01:23] Attempting restart for Frontend
+[2026-05-07 16:01:23] Restart attempt 1 of 3
+[2026-05-07 16:01:34] Frontend is UP after restart
+```
+
+### Verified On Server
+- SSH: root@187.77.68.83
+- Service: peters-erp-health-monitor.service (active)
+- Log: /var/log/peters-erp/health-monitor.log
+- Both services: http://187.77.68.83:5175/ (frontend), http://187.77.68.83:8001/api/health (backend)
+
 ---
 
 ## Test Environment Setup
